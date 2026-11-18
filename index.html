@@ -1,0 +1,2595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balayokesh's Portfolio</title>
+<meta name="description" content="A Room Called Balayokesh — an interactive portfolio inside one room.">
+<link rel="preload" as="image" href="assets/new-sign.webp">
+<link rel="preload" as="image" href="assets/new-close.webp">
+<link rel="preload" as="image" href="assets/room-plate.webp">
+<link rel="preload" as="image" href="assets/char-cut.webp"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..600&family=Caveat:wght@500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  /* one deliberate dark look in every theme */
+  /* type: two fonts. Headings are Bebas Neue, tall narrow capitals lit like a neon sign;
+     everything else is Archivo, stretched wide for the small film-credit labels.
+     Caveat appears only as handwriting on paper things (notes, the resume sheet). */
+  :root {
+    --black: #040303; --cream: #efe4d2; --amber: #f5b46a; --neon: 255, 150, 70; color-scheme: dark;
+    --f-head: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+    --f-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --f-hand: "Caveat", "Segoe Print", cursive;
+    --glow: 0 0 6px rgba(255,190,130,.55), 0 0 18px rgba(255,150,70,.45), 0 0 42px rgba(255,120,40,.3);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--black); color: var(--cream); height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { font-family: var(--f-ui); touch-action: none; }
+  /* the small uppercase labels: wide like opening credits */
+  .title small, .gate-eyebrow, .gate button, .chapter, .hint, .sound, .about .eyebrow, .about .role {
+    font-family: var(--f-ui); font-stretch: 125%; font-weight: 500;
+  }
+
+  .stage { position: fixed; inset: 0; overflow: hidden; background: var(--black); transform-origin: 0 50%; }
+  .skills { transform-origin: 0 50%; }
+
+  /* The "camera". All layers live in the coordinate space of the lit room
+     image (1920x1080); the other images are placed so their neon signs
+     sit exactly on top of the lit room's sign. */
+  .room { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+  /* max-width: none — the sign plates are deliberately wider than the room (109.85%) to line up
+     on its sign; a host's default img { max-width: 100% } would squeeze them out of register */
+  .room img, .wide img { position: absolute; display: block; max-width: none; user-select: none; pointer-events: none; }
+  .full  { left: 0; top: 0; width: 100%; height: 100%; }
+  .align-sign  { left: -0.19%; top: -8.49%; width: 109.85%; height: 103.31%; }  /* image 2, fitted to the new room */
+  .align-close { left: 35.75%; top: 12.38%; width: 38.53%; height: 36.24%; }  /* image 4, fitted to the new room */
+  .char { left: 30.50%; top: 23.91%; width: 11.96%; height: 61.10%; opacity: 0; will-change: transform, opacity; }  /* character depth layer */
+
+  .layer-off   { filter: brightness(.045) saturate(.8); }   /* neon switched off */
+  .glow        { position: absolute; inset: 0; }
+  .layer-sign  { opacity: 0; }
+  .layer-close {
+    opacity: 0;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+                        linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+                linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
+    mask-composite: intersect;
+  }
+  .layer-lit   { opacity: 0; }
+
+  /* light effects that sit on top of the photos, placed on the sign */
+  .fx-outer { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; will-change: opacity; }
+  .fx { position: absolute; inset: 0; opacity: 0; }
+  .bloom {
+    position: absolute; left: 55.74%; top: 28.95%; width: 49.3%; height: 42.2%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse at center, rgba(var(--neon), .30) 0%, rgba(var(--neon), .10) 40%, transparent 70%);
+  }
+  .flare {
+    position: absolute; left: 55.74%; top: 28.1%; width: 78.5%; height: .5%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(90deg, transparent, rgba(var(--neon), .2) 25%, rgba(255, 215, 170, .7) 50%, rgba(var(--neon), .2) 75%, transparent);
+    filter: blur(1.5px); border-radius: 50%;
+    will-change: transform; /* its own layer: the slow breathing no longer repaints the whole light pass */
+  }
+  .flare.wide { height: 2.2%; opacity: .25; filter: blur(6px); }
+
+  /* dust motes caught in the neon light */
+  .dust { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; }
+
+  /* cinematic finish */
+  .vignette {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.55) 100%);
+  }
+  .grain {
+    position: fixed; inset: -50%; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+    background-size: 160px 160px;
+  }
+  .bar { position: fixed; left: 0; right: 0; height: 9vh; background: #000; pointer-events: none; z-index: 2; }
+  .bar.top { top: 0; transform-origin: 50% 0; } .bar.bottom { bottom: 0; transform-origin: 50% 100%; }
+  .curtain { position: fixed; inset: 0; background: #000; pointer-events: none; z-index: 3; }
+
+  /* opening title card */
+  .title { display: none !important; }
+  .title-unused {
+    position: fixed; inset: 0; z-index: 4; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    text-align: center;
+  }
+  .title small {
+    font-size: 11px; letter-spacing: .6em; text-transform: uppercase; color: rgba(239,228,210,.6);
+    padding-left: .6em; opacity: 0;
+  }
+  .title h1 {
+    font-family: var(--f-head); font-weight: 400;
+    font-size: clamp(54px, 9.6vw, 134px); letter-spacing: .035em; line-height: 1; color: #fff3e4;
+    text-shadow: var(--glow); padding: 0 .06em;
+  }
+  .title h1 span { display: inline-block; opacity: 0; }
+  /* entry gate: a closed door at the end of a dark hall, warm light leaking under it. The name is on a
+     brass plate, the line about sound on a typed card taped to the door. Entering turns the handle, the
+     door swings inward, and we walk into the light */
+  .gate {
+    position: fixed; inset: 0; z-index: 50; overflow: hidden; display: grid; place-items: center;
+    background: #050303; color: var(--cream); text-align: center;
+    --dh: clamp(380px, 74svh, 660px);
+    --dw: min(calc(var(--dh) * .5), 82vw);
+  }
+  .gate-wall { position: absolute; inset: 0; pointer-events: none; background:
+    radial-gradient(ellipse 46% 40% at 50% 64%, rgba(130,76,36,.20), transparent 72%),
+    radial-gradient(ellipse 90% 80% at 50% 48%, #120d0a 0%, #080605 58%, #030202 100%); }
+  .gate-grain { position: absolute; inset: 0; pointer-events: none; opacity: .07; background-size: 160px; z-index: 6; }
+  .gate-dim { position: absolute; inset: 0; background: #000; pointer-events: none; z-index: 4; }
+  .gate-flood { position: absolute; inset: 0; opacity: 0; pointer-events: none; z-index: 7;
+    background: radial-gradient(circle at 50% 45%, #fffaf0 0%, #ffecd0 45%, #f6d29f 100%); }
+  .hall { position: relative; width: var(--dw); height: var(--dh); margin-top: -5svh; }
+  .floor { position: absolute; top: 100%; left: -100vw; right: -100vw; height: 100svh; pointer-events: none;
+    background: linear-gradient(to bottom, #0d0907, #070504 35%, #030202); border-top: 1px solid rgba(255,190,130,.07); }
+  .spill { position: absolute; top: 100%; left: -60%; right: -60%; height: 36svh; filter: blur(7px); pointer-events: none; z-index: 5; }
+  .spill i { position: absolute; inset: 0; transform-origin: 50% 0;
+    background: radial-gradient(ellipse 52% 100% at 50% 0%, rgba(255,186,112,.40), rgba(255,150,70,.13) 46%, transparent 78%);
+    clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%); }
+  .opening { position: absolute; inset: 0; perspective: 1500px; perspective-origin: 50% 46%; }
+  .beyond { position: absolute; inset: 0; background:
+    radial-gradient(ellipse 90% 55% at 64% 24%, #fff3de 0%, #ffd8a2 32%, transparent 72%),
+    linear-gradient(to top, #ffe3b6 0%, #f3b46a 20%, #c27a3c 58%, #7d4720 100%); }
+  .door { position: absolute; left: 1px; top: 1px; right: 2px; bottom: 7px; transform-origin: 0 50%; transform-style: preserve-3d;
+    container-type: inline-size; box-shadow: inset 0 0 0 1px rgba(0,0,0,.55);
+    background:
+      linear-gradient(to top, rgba(255,160,90,.14), rgba(255,160,90,0) 32%),
+      repeating-linear-gradient(90deg, rgba(255,230,200,.018) 0 1px, transparent 1px 5px, rgba(0,0,0,.06) 5px 6px, transparent 6px 13px),
+      linear-gradient(90deg, #1a120d, #20170f 50%, #1b130d); }
+  .door-edge { position: absolute; top: 0; bottom: 0; right: 0; width: 4cqw; transform-origin: 100% 50%; transform: rotateY(-90deg); background: #2a1e14; }
+  .door-shade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .panel { position: absolute; left: 13%; right: 13%; background: rgba(0,0,0,.12);
+    box-shadow: inset 3px 3px 5px rgba(0,0,0,.55), inset -1px -1px 0 rgba(255,200,150,.07), 0 1px 0 rgba(255,200,150,.04); }
+  .panel::after { content: ""; position: absolute; inset: 8%; box-shadow: inset -1px -1px 0 rgba(0,0,0,.45), inset 1px 1px 0 rgba(255,210,170,.045); }
+  .panel.p1 { top: 6%; height: 39%; } .panel.p2 { top: 56%; height: 38%; }
+  .hinge { position: absolute; left: -1px; width: 3.4%; height: 7%; background: linear-gradient(90deg, #241a12, #46372a 50%, #241a12); }
+  .hinge.h1 { top: 9%; } .hinge.h2 { top: 84%; }
+  .plate { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); width: 74%; padding: 5.5cqw 3cqw 5cqw; border-radius: 2px;
+    background:
+      radial-gradient(circle at 6% 15%, #2e2215 0 1.5px, transparent 2.2px), radial-gradient(circle at 94% 15%, #2e2215 0 1.5px, transparent 2.2px),
+      radial-gradient(circle at 6% 85%, #2e2215 0 1.5px, transparent 2.2px), radial-gradient(circle at 94% 85%, #2e2215 0 1.5px, transparent 2.2px),
+      linear-gradient(172deg, #a3845a 0%, #85683f 46%, #6a5133 100%);
+    box-shadow: 0 2px 4px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,230,180,.22), inset 0 -1px 0 rgba(0,0,0,.4); }
+  .plate small { display: block; font-family: var(--f-ui); font-stretch: 125%; font-weight: 500; text-transform: uppercase;
+    font-size: max(9px, 3.1cqw); letter-spacing: .5em; padding-left: .5em; color: #1c1209; text-shadow: 0 1px 0 rgba(255,225,170,.25); }
+  .plate b { display: block; font-family: var(--f-head); font-weight: 400; font-size: 12.4cqw; letter-spacing: .035em; line-height: 1; margin-top: 2.6cqw; white-space: nowrap;
+    color: #160d05; text-shadow: 0 1px 0 rgba(255,228,175,.32), 0 -1px 0 rgba(0,0,0,.35); }
+  .note { position: absolute; left: 50%; top: 36%; width: 60%; transform: translateX(-50%) rotate(-1.4deg); padding: 5cqw 5cqw 4.5cqw;
+    background: linear-gradient(175deg, #d4c6ad, #c6b598 70%, #bca784); color: #261d14; text-align: left;
+    font-family: var(--f-hand); font-weight: 700; font-size: max(15px, 5.6cqw); line-height: 1.15; box-shadow: 0 2px 5px rgba(0,0,0,.5); }
+  .note::before { content: ""; position: absolute; left: 50%; top: -7px; width: 34%; height: 15px; transform: translateX(-50%) rotate(2.5deg);
+    background: rgba(226,212,178,.32); }
+  .handle { position: absolute; right: 7%; top: 53%; width: 8cqw; height: 8cqw; }
+  .lever { position: absolute; right: 50%; top: 50%; width: 22cqw; height: 2.6cqw; margin-top: -1.3cqw; transform-origin: 100% 50%; border-radius: 2cqw;
+    background: linear-gradient(to bottom, #a88c5f, #6a5234 60%, #45341f); box-shadow: 0 3px 3px rgba(0,0,0,.55); }
+  .rose { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #a2855a, #66502f 60%, #3b2c1b); box-shadow: 0 2px 3px rgba(0,0,0,.6); }
+  .leak { position: absolute; left: 2px; right: 3px; bottom: 0; height: 7px; z-index: 5; pointer-events: none;
+    background: linear-gradient(to bottom, #ffcf8e, #fff0d6); box-shadow: 0 0 10px 2px rgba(255,178,100,.55), 0 0 36px 8px rgba(255,140,60,.2); }
+  .casing { position: absolute; inset: -13px -13px 0 -13px; border: 13px solid #17100b; border-bottom: 0; pointer-events: none; z-index: 3;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.7), 0 0 0 1px rgba(255,200,150,.035); }
+  .gate-btns { position: absolute; left: 50%; top: 63%; transform: translateX(-50%); width: 76%; display: flex; flex-direction: column; gap: 3cqw; }
+  .gate button {
+    cursor: pointer; min-height: 44px; padding: 12px 10px; display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 10px; line-height: 1; letter-spacing: .16em; text-transform: uppercase; border-radius: 1px; white-space: nowrap;
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .gate button.primary { background: linear-gradient(#e6d8bf, #d2c1a2); color: #1b120a; border: 1px solid #ecdfc5; box-shadow: 0 2px 4px rgba(0,0,0,.5); }
+  .gate button.primary:hover { background: #f3e8d4; }
+  .gate button.quiet { background: rgba(8,5,3,.35); color: rgba(239,228,210,.82); border: 1px solid rgba(239,228,210,.26); }
+  .gate button.quiet:hover { color: #fff3e2; border-color: rgba(239,228,210,.55); background: rgba(239,228,210,.06); }
+  .gate button:focus-visible { outline: 1px solid var(--amber); outline-offset: 4px; }
+  .meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+  .meter i { width: 2px; height: 100%; background: currentColor; transform-origin: bottom; animation: meter 1.1s ease-in-out infinite; }
+  .meter i:nth-child(2) { animation-delay: -.35s; } .meter i:nth-child(3) { animation-delay: -.7s; } .meter i:nth-child(4) { animation-delay: -.2s; }
+  @keyframes meter { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+  .mute { width: 14px; height: 12px; }
+  @media (prefers-reduced-motion: reduce) { .meter i { animation: none; } }
+  .title .rule { width: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+  .title .role { font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: rgba(239,228,210,.66); opacity: 0; }
+  @media (max-width: 600px) { .title .role { font-size: 10px; letter-spacing: .26em; } }
+
+  /* film-style chapter caption */
+  .chapter {
+    position: fixed; left: 28px; bottom: calc(9vh + 22px); z-index: 4; pointer-events: none;
+    font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: rgba(239,228,210,.55);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .chapter b { font-weight: 400; color: var(--amber); }
+  .chapter i { display: block; width: 28px; height: 1px; background: rgba(239,228,210,.35); }
+
+  .hint {
+    position: fixed; left: 50%; bottom: calc(9vh + 22px); transform: translateX(-50%); z-index: 4;
+    font-size: 11px; letter-spacing: .35em; text-transform: uppercase; white-space: nowrap;
+    color: var(--cream); opacity: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none;
+  }
+  .hint i {
+    display: block; width: 1px; height: 34px;
+    background: linear-gradient(var(--amber), transparent);
+    animation: drip 2.2s ease-in-out infinite; transform-origin: top;
+  }
+  @keyframes drip { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+
+  .dots { position: fixed; right: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 4; }
+  .dots button {
+    width: 7px; height: 7px; border-radius: 50%; border: 1px solid rgba(239,228,210,.4);
+    background: transparent; cursor: pointer; padding: 0; transition: background .5s, transform .5s, border-color .5s;
+  }
+  .dots button.on { background: var(--amber); border-color: var(--amber); transform: scale(1.3); }
+  .dots button:focus-visible { outline: 1px solid var(--amber); outline-offset: 3px; }
+
+  /* volumetric haze in the neon light */
+  .haze {
+    position: absolute; left: 55.74%; top: 33.2%; width: 69.5%; height: 67.5%;
+    transform: translate(-50%, -50%); opacity: .55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='420'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005 0.011' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.62 0 0 0 0 0.32 1.3 0 0 0 -0.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+    background-size: 150% 150%; background-position: 0% 50%;
+    -webkit-mask-image: radial-gradient(ellipse closest-side, #000 15%, transparent 100%);
+    mask-image: radial-gradient(ellipse closest-side, #000 15%, transparent 100%);
+  }
+  .haze.two { opacity: .35; background-size: 210% 190%; background-position: 100% 0%; }
+
+  /* colour grade: cool shadows against the warm neon */
+  .grade { position: fixed; inset: 0; pointer-events: none; background: #0b3a48; mix-blend-mode: soft-light; opacity: .6; }
+  /* eyes adjusting when the lights come on */
+  .exposure {
+    position: fixed; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(255, 214, 170, .55), rgba(255, 170, 110, .15) 60%, transparent 85%);
+  }
+
+  /* sound toggle, sits in the top letterbox bar */
+  .sound {
+    position: fixed; top: calc(4.5vh - 12px); right: 24px; z-index: 5; height: 24px;
+    display: flex; align-items: center; gap: 10px; padding: 0 2px;
+    background: none; border: 0; cursor: pointer; color: rgba(239,228,210,.6);
+    font-size: 10px; line-height: 1; letter-spacing: .3em; text-transform: uppercase;
+  }
+  .sound:hover, .sound[aria-pressed="true"] { color: var(--cream); }
+  .sound:focus-visible { outline: 1px solid var(--amber); outline-offset: 4px; }
+  .sound .eq { display: flex; align-items: flex-end; gap: 2px; height: 10px; }
+  .sound .eq i { display: block; width: 2px; height: 2px; background: currentColor; }
+  .sound[aria-pressed="true"] .eq i { background: var(--amber); animation: eq 1s ease-in-out infinite alternate; }
+  .sound[aria-pressed="true"] .eq i:nth-child(2) { animation-delay: -.4s; }
+  .sound[aria-pressed="true"] .eq i:nth-child(3) { animation-delay: -.7s; }
+  @keyframes eq { from { height: 2px; } to { height: 10px; } }
+
+  /* 04 -> 05: the walk to the mirror, a video scrubbed by scroll. Its first frame is the room image,
+     so it sits in the room's own coordinates and takes over invisibly. */
+  .walk { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: fill; opacity: 0; pointer-events: none; }
+  /* About me, full: a wider shot, its own camera layer above the room */
+  .wide { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform, opacity; opacity: 0; visibility: hidden; }
+  .wide img, .wide video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: fill; user-select: none; pointer-events: none; }
+  .wide video { opacity: 0; }
+  /* the dip to black between the face and the wide shot */
+  .dip { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, #0b0706 0%, #000 75%); opacity: 0; pointer-events: none; }
+  /* a light streak travelling across the glass only (left of the blurred shoulder) */
+  .glass {
+    position: absolute; inset: 0; overflow: hidden; pointer-events: none; mix-blend-mode: screen;
+    clip-path: polygon(10.5% 0%, 54% 4%, 54% 30%, 52% 52%, 46% 64%, 43% 100%, 14.5% 100%);
+    visibility: hidden; /* only switched on while the streak crosses the mirror */
+  }
+  .sheen {
+    position: absolute; top: -10%; left: 30%; width: 14%; height: 120%; transform: translateX(-100%) skewX(-18deg);
+    background: linear-gradient(90deg, transparent, rgba(255, 226, 190, .16) 45%, rgba(255, 240, 220, .28) 50%, rgba(255, 226, 190, .16) 55%, transparent);
+    filter: blur(4px); opacity: 0;
+  }
+
+  /* About Me copy (placeholder content for now) */
+  .about-shade {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 1;
+    background: linear-gradient(270deg, rgba(3,2,2,.74) 0%, rgba(3,2,2,.42) 28%, transparent 50%);
+  }
+  .about {
+    position: fixed; right: 6vw; top: 50%; transform: translateY(-50%); z-index: 4;
+    width: 380px; pointer-events: none;
+  }
+  .about > * { opacity: 0; }
+  .about ul { opacity: 1; }
+  .about li { opacity: 0; }
+  .about .eyebrow { font-size: 10px; letter-spacing: .5em; text-transform: uppercase; color: var(--amber); margin-bottom: 18px; }
+  .about h2 {
+    font-family: var(--f-head); font-weight: 400;
+    font-size: clamp(48px, 5.4vw, 80px); letter-spacing: .03em; line-height: 1; color: #fff3e4; text-shadow: var(--glow);
+    margin: 0 0 10px;
+  }
+  .about .role { font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: rgba(239,228,210,.72); margin-bottom: 26px; }
+  .about .rule { width: 46px; height: 1px; background: linear-gradient(90deg, var(--amber), transparent); margin-bottom: 22px; }
+  .about p { font-size: 15px; font-weight: 400; line-height: 1.65; color: rgba(239,228,210,.84); margin-bottom: 24px; }
+  .about ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+  .about li {
+    font-weight: 500; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(239,228,210,.85);
+    border: 1px solid rgba(245,180,106,.3); border-radius: 999px; padding: 7px 12px;
+  }
+
+  @media (max-width: 760px), (max-aspect-ratio: 1/1) {
+    .about-shade { background: linear-gradient(0deg, rgba(3,2,2,.88) 0%, rgba(3,2,2,.6) 34%, transparent 58%); }
+    .about { left: 16px; right: 16px; top: auto; bottom: calc(9vh + 56px); transform: none; width: auto; }
+    .about .eyebrow { margin-bottom: 10px; }
+    .about .role { margin-bottom: 14px; }
+    .about .rule { display: none; }
+    .about p { font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+    .about li { font-size: 9.5px; letter-spacing: .1em; padding: 6px 10px; }
+    .about ul { gap: 6px; }
+    .about h2 { font-size: 42px; margin-bottom: 6px; }
+    .about .role { margin-bottom: 16px; }
+  }
+
+  /* 06 -> 07: the camera turns right, across the room to the desk. The desk shot sits just right of
+     the wide shot like one long strip, so the pan never shows a gap; its left edge is feathered over
+     the seam, which passes the middle of the screen at full motion blur */
+  .desk { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; visibility: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14%); mask-image: linear-gradient(90deg, transparent 0, #000 14%); }
+  .desk img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; object-fit: fill; user-select: none; pointer-events: none; }
+  /* the desk lamp's pool of light, breathing a little (it is part of the picture, so it moves with it) */
+  .lamp-glow { position: absolute; z-index: 1; left: 78.9%; top: 25.3%; width: 52%; height: 78%; transform: translate(-50%, -22%); pointer-events: none; mix-blend-mode: screen;
+    background: radial-gradient(ellipse 50% 50% at 50% 30%, rgba(255,196,128,.26), rgba(255,150,70,.1) 45%, transparent 72%); }
+  /* steam off the coffee: soft ribbons that rise, curl and thin out (drawn live, part of the picture) */
+  .steam { position: absolute; left: 77.75%; top: 38.26%; width: 7.18%; height: 16.47%; z-index: 1; pointer-events: none;
+    filter: blur(0.8px); }
+  /* the monitor's backlight: part of the picture, exactly over the dark glass. It throws a cool light
+     on the wall and the desk, against the warm lamp */
+  .mon-light { position: absolute; z-index: 1; left: 34.09%; top: 15.52%; width: 31.28%; height: 31.35%; border-radius: 4px; opacity: 0; pointer-events: none;
+    background: radial-gradient(130% 100% at 28% 18%, #1f3844, #111f28 52%, #0a1218);
+    box-shadow: inset 0 0 18px rgba(0,0,0,.45), 0 0 10px rgba(140,190,220,.22); }
+  .mon-spill { position: absolute; z-index: 1; left: 49.7%; top: 31%; width: 74%; height: 120%; transform: translate(-50%, -42%); opacity: 0; pointer-events: none;
+    mix-blend-mode: screen; background: radial-gradient(ellipse 50% 44% at 50% 42%, rgba(120,170,210,.2), rgba(90,140,190,.07) 52%, transparent 74%); }
+  /* the lamp's bulb catches the lens: a thin horizontal streak, brightest while the camera moves */
+  .lamp-flare { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; pointer-events: none; }
+  .lamp-flare i { position: absolute; left: 0; top: 0; width: 64vw; height: 3px; transform: translate(-50%, -50%); border-radius: 50%;
+    background: linear-gradient(90deg, transparent, rgba(255,170,90,.25) 22%, rgba(255,226,186,.85) 50%, rgba(255,170,90,.25) 78%, transparent); filter: blur(1.2px); }
+  .lamp-flare i + i { width: 90vw; height: 26px; opacity: .3; filter: blur(9px); }
+  .lamp-flare b { position: absolute; left: 0; top: 0; width: 22vmin; height: 22vmin; transform: translate(-50%, -50%); border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,214,160,.35), rgba(255,160,80,.1) 40%, transparent 70%); }
+  /* close-ups: whatever is nearest the lens (pencils, the edge of the desk) falls soft */
+  .dof { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; opacity: 0; pointer-events: none;
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+    -webkit-mask-image: linear-gradient(to top, #000 25%, transparent); mask-image: linear-gradient(to top, #000 25%, transparent); }
+  .skills { position: fixed; inset: 0; z-index: 4; pointer-events: none; visibility: hidden; }
+  /* the heading sits on the wall above the monitor */
+  .skills-head { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; }
+  .skills-head > * { opacity: 0; }
+  .skills-head .eyebrow { font-family: var(--f-ui); font-stretch: 125%; font-weight: 500; font-size: 10px; letter-spacing: .5em; padding-left: .5em; text-transform: uppercase; color: var(--amber); margin-bottom: 10px; }
+  .skills-head h2 { font-family: var(--f-head); font-weight: 400; font-size: clamp(32px, 3.2vw, 54px); letter-spacing: .035em; line-height: 1; color: #fff3e4; text-shadow: var(--glow); }
+  /* the four notes are part of the picture; once the camera is close, the writing appears on them */
+  .jots { list-style: none; }
+  .jot { position: absolute; left: 0; top: 0; width: var(--w, 160px); height: var(--w, 160px); transform-origin: 50% 50%;
+    padding: calc(var(--w, 160px) * .2) calc(var(--w, 160px) * .09) 0; color: rgba(38,20,8,.9); font-family: var(--f-hand); }
+  .jot b { display: block; font-weight: 700; font-size: calc(var(--w, 160px) * .165); line-height: 1.1; color: rgba(52,22,6,.92);
+    padding-bottom: calc(var(--w, 160px) * .03); margin-bottom: calc(var(--w, 160px) * .05); border-bottom: 1.5px solid rgba(50,25,8,.32); }
+  .jot span { display: block; font-weight: 500; font-size: calc(var(--w, 160px) * .122); line-height: 1.28; white-space: nowrap; }
+  .jot b, .jot span { clip-path: inset(0% 100% 0% 0%); }
+  /* phones and squarer screens: the heading drops low over the chair */
+  .skills.stacked .skills-head { left: 16px; right: 16px; top: auto; bottom: calc(9vh + 64px); transform: none; white-space: normal;
+    padding: 16px; background: rgba(8,5,3,.62); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+  .skills.stacked .skills-head h2 { font-size: 42px; }
+  /* the resume: the frame on the desk is a button, with a few words beside it */
+  /* the copper glass frame on the desk. Its box is 172 x 200 px of desk.webp starting at (1116, 378);
+     the page inside is drawn at 820 x 1200 and bent into the glass with a matrix3d set in layout() */
+  .gframe { position: absolute; left: 66.7464%; top: 40.17%; width: 10.2871%; height: 21.254%; pointer-events: none; }
+  .gf-page { position: absolute; left: 0; top: 0; width: 820px; height: 1200px; transform-origin: 0 0; overflow: hidden;
+    padding: 74px 72px 0; color: #43200c; font-family: var(--f-ui);
+    background: radial-gradient(ellipse 90% 70% at 68% 18%, #ffd3a3 0%, #f8c391 55%, #e9ac78 100%);
+    box-shadow: inset 0 0 46px rgba(70,26,6,.38); }
+  .gf-page .gf-name { font-family: var(--f-head); font-size: 112px; line-height: .92; letter-spacing: .02em; color: #351405; }
+  .gf-page .gf-role { margin-top: 14px; font-size: 25px; font-weight: 600; letter-spacing: .3em; text-transform: uppercase; color: #9a4512; }
+  .gf-page .gf-contact { margin-top: 14px; font-size: 21px; color: #6a3415; }
+  .gf-page hr { border: 0; height: 3px; background: #b2652e; opacity: .55; margin: 34px 0 30px; width: 120px; }
+  .gf-page h4 { font-family: var(--f-head); font-weight: 400; font-size: 40px; letter-spacing: .08em; color: #351405; margin: 30px 0 10px; }
+  .gf-page p { font-size: 24px; line-height: 1.45; margin: 0; }
+  .gf-page .gf-job { display: flex; justify-content: space-between; gap: 16px; font-size: 23px; line-height: 1.35; margin-bottom: 10px; }
+  .gf-page .gf-job b { font-weight: 600; color: #3a1708; }
+  .gf-page .gf-job span { flex: none; color: #7a3c16; }
+  /* the glass in front of the page: two light streaks like the frame's own reflection, and a dull top sheen */
+  .gf-glass { position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(118deg, transparent 50%, rgba(255,238,212,.20) 56%, rgba(255,248,232,.42) 59.5%, rgba(255,238,212,.18) 63%, transparent 69%),
+      linear-gradient(118deg, transparent 66%, rgba(255,238,212,.16) 70%, transparent 75%),
+      linear-gradient(180deg, rgba(255,246,232,.14), transparent 26%); }
+  .frame-hit { position: absolute; left: 0; top: 0; padding: 0; border: 0; background: transparent; border-radius: 3px; cursor: pointer; pointer-events: none;
+    transition: box-shadow .35s; }
+  .frame-hit.on { pointer-events: auto; }
+  .frame-hit.on:hover, .frame-hit.on:focus-visible { outline: none; box-shadow: 0 0 0 1px rgba(245,180,106,.75), 0 0 28px rgba(245,180,106,.4); }
+  .frame-hit.pulse { animation: framePulse 2.6s ease-in-out infinite; }
+  @keyframes framePulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(245,180,106,.18), 0 0 14px rgba(245,180,106,.08); }
+    50% { box-shadow: 0 0 0 1px rgba(245,180,106,.6), 0 0 30px rgba(245,180,106,.3); } }
+  .resume-cta { position: absolute; left: 0; top: 0; width: min(340px, 32vw); visibility: inherit; text-shadow: 0 1px 10px rgba(0,0,0,.85); }
+  .resume-cta::before { content: ""; position: absolute; inset: -40px -50px; z-index: -1; pointer-events: none;
+    background: radial-gradient(closest-side, rgba(12,7,3,.6), rgba(12,7,3,.35) 60%, transparent); }
+  .resume-cta .eyebrow { font-family: var(--f-ui); font-stretch: 125%; font-weight: 500; font-size: 10px; letter-spacing: .5em; text-transform: uppercase; color: var(--amber); margin-bottom: 10px; }
+  .resume-cta h2 { font-family: var(--f-head); font-weight: 400; font-size: clamp(34px, 3.4vw, 54px); letter-spacing: .035em; line-height: 1; color: #fff3e4; text-shadow: var(--glow); }
+  .resume-cta p { font-family: var(--f-ui); font-size: 14px; line-height: 1.6; color: rgba(239,228,210,.78); margin: 12px 0 22px; }
+  /* the button belongs to the lamplit room: a warm outline that lights up when you point at it */
+  .resume-cta button { position: relative; overflow: hidden; pointer-events: auto; cursor: pointer; display: inline-flex; align-items: center; gap: .7em;
+    min-height: 46px; padding: 13px 22px; font-family: var(--f-ui); font-stretch: 112%; font-weight: 500; font-size: 10.5px; letter-spacing: .22em;
+    text-transform: uppercase; color: #ffeacd; background: rgba(245,150,70,.07); border: 1px solid rgba(245,180,106,.5); border-radius: 2px;
+    box-shadow: inset 0 0 1.4em rgba(245,150,70,.1); transition: color .3s, border-color .3s, background .3s, box-shadow .3s; }
+  .resume-cta button svg { width: 15px; height: 15px; fill: none; stroke: var(--amber); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+    flex: none; transition: stroke .3s, transform .4s cubic-bezier(.2,.7,.2,1); }
+  /* a slow warm sweep across the face, the way the lamp catches it */
+  .resume-cta button::after { content: ""; position: absolute; inset: 0; pointer-events: none; transform: translateX(-120%);
+    background: linear-gradient(105deg, transparent, rgba(255,220,170,.16) 45%, transparent); transition: transform .7s cubic-bezier(.3,.7,.2,1); }
+  .resume-cta button:hover, .resume-cta button:focus-visible { color: #1b120a; background: var(--amber); border-color: #ffd49a;
+    box-shadow: 0 0 1.6em rgba(245,150,70,.45), 0 .4em 1.2em rgba(0,0,0,.45); }
+  .resume-cta button:hover svg, .resume-cta button:focus-visible svg { stroke: #1b120a; transform: translateY(-1px); }
+  .resume-cta button:hover::after, .resume-cta button:focus-visible::after { transform: translateX(120%); }
+  .resume-cta button:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+  .resume-cta button:active { transform: translateY(1px); }
+  .skills.stacked .resume-cta { width: auto; right: 16px; text-align: center; }
+  .skills.stacked .resume-cta h2 { font-size: 38px; }
+  .skills.stacked .resume-cta p { margin: 8px 0 16px; }
+  /* what's on the monitor: a window that follows the glass (laid out at its resting size, so the words stay sharp) */
+  .mon-boot { position: absolute; left: 0; top: 0; transform-origin: 0 0; font-family: var(--f-head); font-size: clamp(30px, 3.8vw, 58px); letter-spacing: .12em; line-height: 1;
+    color: #eaf6ff; text-shadow: 0 0 6px rgba(170,215,240,.6), 0 0 20px rgba(120,180,220,.45), 0 0 44px rgba(90,150,200,.3); white-space: nowrap; opacity: 0; visibility: hidden; }
+  .mon-ui { --p: 0; position: absolute; left: 0; top: 0; transform-origin: 0 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 3px;
+    font-family: var(--f-ui); font-size: var(--fs, 15px); color: #e6eef1; opacity: 0; visibility: hidden;
+    /* wallpaper: night blue, with the warm lamp glow coming in from the lower left */
+    background: radial-gradient(90% 70% at 8% 108%, rgba(245,150,70,.34), rgba(245,150,70,0) 60%), radial-gradient(80% 70% at 92% -8%, rgba(90,150,200,.32), rgba(90,150,200,0) 62%),
+      linear-gradient(160deg, #132430, #0b131a 58%, #160f0c); }
+  /* a faint reflection across the glass */
+  .mon-ui::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background: linear-gradient(112deg, rgba(255,255,255,.035), rgba(255,255,255,.012) 30%, rgba(255,255,255,0) 46%), radial-gradient(70% 60% at 85% 10%, rgba(255,190,120,.06), transparent 70%);
+    box-shadow: inset 0 0 2.4em rgba(0,0,0,.45); }
+  .mon-ui svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .mon-ui button, .mon-ui a { font: inherit; color: inherit; pointer-events: auto; cursor: pointer; }
+  /* the space between the bar and the dock, where the window sits */
+  .os-area { flex: 1; min-height: 0; display: flex; padding: .7em 1em .45em; }
+  .os-win { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: .5em; background: rgba(12,19,24,.9);
+    border: 1px solid rgba(215,232,240,.12); box-shadow: 0 1.2em 2.6em rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04); }
+  /* Windows title bar: app icon + name on the left, minimise / maximise / close on the right */
+  .os-title { flex: none; display: flex; align-items: center; height: 2.7em; padding-left: .95em; font-size: .62em;
+    background: rgba(6,10,13,.5); border-bottom: 1px solid rgba(215,232,240,.07); color: rgba(230,238,241,.8); }
+  .os-title .app, .os-title .name { display: grid; }
+  .os-title .app > *, .os-title .name > * { grid-area: 1 / 1; }
+  .os-title .app svg { width: 1.35em; height: 1.35em; color: #f3c04f; }
+  .os-title .app svg:last-child { color: #7fb4e0; }
+  .os-title .app svg:first-child, .os-title .name span:first-child { opacity: calc(1 - var(--p)); }
+  .os-title .app svg:last-child, .os-title .name span:last-child { opacity: var(--p); }
+  .os-title .name { margin-left: .8em; letter-spacing: .02em; white-space: nowrap; }
+  .caps { margin-left: auto; display: flex; align-self: stretch; }
+  .caps > * { display: grid; place-items: center; width: 3.6em; padding: 0; border: 0; background: none; color: rgba(230,238,241,.75); pointer-events: auto; transition: background .15s, color .15s; }
+  .caps > * svg { width: 1.25em; height: 1.25em; stroke-width: 1.4; }
+  .caps > *:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .caps > .cls:hover { background: #c42b1c; color: #fff; }
+  .os-main { flex: 1; min-height: 0; display: flex; }
+  .os-side { flex: none; width: 10.6em; display: flex; flex-direction: column; gap: .3em; padding: 1.1em .7em; font-size: .7em; background: rgba(215,232,240,.025); border-right: 1px solid rgba(215,232,240,.07); }
+  .os-side small { display: block; font-size: .74em; font-weight: 600; letter-spacing: .18em; line-height: 1; text-transform: uppercase; color: rgba(215,232,240,.4); padding: 0 .95em; margin-bottom: .7em; }
+  /* the page on screen: lit background, amber bar on the left, brighter words */
+  .os-side button { position: relative; display: flex; align-items: center; gap: .75em; width: 100%; padding: .7em .95em; border: 0; border-radius: .35em; text-align: left; line-height: 1;
+    background: rgba(215,232,240, calc(.09 * var(--on))); color: rgba(230,238,241, calc(.58 + .42 * var(--on))); font-weight: calc(400 + 200 * var(--on)); transition: background .2s; }
+  .os-side button::before { content: ''; position: absolute; left: 0; top: 50%; width: .22em; height: 1.1em; margin-top: -.55em; border-radius: 0 .2em .2em 0;
+    background: var(--amber); opacity: var(--on); box-shadow: 0 0 .5em rgba(245,180,106,.7); }
+  .os-side button svg { width: 1.3em; height: 1.3em; color: rgba(245,180,106, calc(.5 + .5 * var(--on))); }
+  .os-side button:hover { background: rgba(215,232,240, calc(.06 + .05 * var(--on))); }
+  .os-side button:focus-visible, .os-task button:focus-visible, .os-task a:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  #sbProj { --on: calc(1 - var(--p)); }
+  #sbExp { --on: var(--p); }
+  /* Windows taskbar: start, search and pinned apps in the middle; the tray and clock on the right */
+  .os-task { flex: none; position: relative; z-index: 2; display: flex; align-items: center; height: 3.5em; padding: 0 .9em; font-size: .6em;
+    background: rgba(10,15,19,.82); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid rgba(215,232,240,.09); color: rgba(230,238,241,.85); }
+  .os-task .mid { position: absolute; left: 50%; top: 0; bottom: 0; transform: translateX(-50%); display: flex; align-items: center; gap: .25em; }
+  .os-task .ti { position: relative; display: grid; place-items: center; width: 2.75em; height: 2.75em; padding: 0; border: 0; border-radius: .4em; text-decoration: none;
+    background: transparent; transition: background .15s; }
+  .os-task .ti:hover { background: rgba(255,255,255,.08); }
+  .os-task .ti svg { width: 1.55em; height: 1.55em; stroke-width: 1.7; }
+  .os-task .start svg { color: var(--amber); stroke-width: 2.1; filter: drop-shadow(0 0 .3em rgba(245,180,106,.55)); }
+  .os-task .d1 svg { color: #f3c04f; }
+  .os-task .d2 svg { color: #7fb4e0; }
+  .os-task .d3 svg { color: #e9e1d2; }
+  .os-task .d4 svg { color: #6fa8f5; }
+  .os-task .d1 { background: rgba(255,255,255, calc(.07 * (1 - var(--p)))); }
+  .os-task .d2 { background: rgba(255,255,255, calc(.07 * var(--p))); }
+  .os-task .search { display: flex; align-items: center; gap: .6em; height: 2.3em; width: 10em; margin: 0 .35em; padding: 0 .9em; border-radius: 99px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.07); color: rgba(230,238,241,.55); }
+  .os-task .search svg { width: 1.2em; height: 1.2em; }
+  .os-task .ind { position: absolute; bottom: .12em; left: 50%; width: .5em; height: .2em; margin-left: -.25em; border-radius: 99px; background: rgba(230,238,241,.55); }
+  .os-task .d1 .ind { width: calc(.5em + .7em * (1 - var(--p))); margin-left: calc(-.25em - .35em * (1 - var(--p))); background: rgba(245,180,106, calc(.55 + .45 * (1 - var(--p)))); }
+  .os-task .d2 .ind { width: calc(.5em + .7em * var(--p)); margin-left: calc(-.25em - .35em * var(--p)); background: rgba(245,180,106, calc(.55 + .45 * var(--p))); }
+  .os-task .tip { position: absolute; bottom: calc(100% + .7em); left: 50%; transform: translateX(-50%); padding: .35em .7em; border-radius: .35em; font-size: .9em; white-space: nowrap;
+    background: rgba(24,30,35,.96); border: 1px solid rgba(255,255,255,.1); color: #e6eef1; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .os-task .ti:hover .tip { opacity: 1; }
+  .os-task .tray { margin-left: auto; display: flex; align-items: center; gap: .9em; white-space: nowrap; }
+  .os-task .tray svg { width: 1.3em; height: 1.3em; }
+  .os-task .clock { display: flex; flex-direction: column; align-items: flex-end; gap: .2em; line-height: 1; font-size: .92em; }
+  /* the two pages share the space inside the window */
+  .mon-panes { flex: 1; min-width: 0; min-height: 0; display: grid; }
+  .mon-body { grid-area: 1 / 1; min-height: 0; display: flex; flex-direction: column; justify-content: safe center; padding: 1em 1.3em; }
+  #monExp { opacity: 0; visibility: hidden; }
+  /* the window title already names the page, so the small label goes; cards keep to two lines of words */
+  .mon-head .eyebrow { display: none; }
+  .mon-work .pic { aspect-ratio: 16 / 9 !important; }
+  .mon-work .mon-tags { flex-wrap: nowrap; overflow: hidden; }
+  .mon-tags span { flex: none; white-space: nowrap; }
+  .mon-tl li { min-width: 0; }
+  .mon-work .mon-tags span:nth-child(n+2) { display: none; }
+  /* experience cards: every tag shows; they wrap to a second line when the card is narrow */
+  .mon-tl .mon-tags { gap: .3em; }
+  .mon-tl .mon-tags span { font-size: .5em; letter-spacing: .06em; padding: .38em .6em; }
+  .mon-work p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* a page's heading: small label + neon title on the left, a count on the right */
+  .mon-head { flex: none; display: flex; align-items: flex-end; justify-content: space-between; gap: 1em; margin-bottom: .8em; }
+  .mon-body .eyebrow { font-stretch: 125%; font-weight: 500; font-size: .6em; letter-spacing: .5em; text-transform: uppercase; color: var(--amber); margin-bottom: .45em; }
+  .mon-body h2 { font-family: var(--f-head); font-weight: 400; font-size: 1.95em; letter-spacing: .035em; line-height: 1; color: #fff3e4; text-shadow: var(--glow); }
+  .mon-head .count { font-size: .62em; letter-spacing: .2em; text-transform: uppercase; color: rgba(215,232,240,.5); padding-bottom: .4em; white-space: nowrap; }
+  .mon-head .open { display: inline-flex; align-items: center; gap: .55em; color: rgba(190,235,200,.85); }
+  .mon-head .open::before { content: ""; width: .7em; height: .7em; border-radius: 50%; background: #6fd08a; box-shadow: 0 0 .6em rgba(111,208,138,.8); }
+  .mon-tags { display: flex; flex-wrap: wrap; gap: .35em; }
+  .mon-tags span { font-size: .54em; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; padding: .38em .75em; border-radius: 99px;
+    color: rgba(230,238,241,.82); background: rgba(8,13,17,.5); border: 1px solid rgba(215,232,240,.16); }
+  /* projects: three cards side by side, picture on top and words below. Each card opens that project's case study */
+  #monProj { justify-content: safe center; }
+  .mon-work { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; }
+  .mon-work li { min-width: 0; }
+  .mon-work button { width: 100%; padding: 0; text-align: left; position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: .6em; pointer-events: auto; color: inherit; text-decoration: none;
+    background: rgba(215,232,240,.04); border: 1px solid rgba(215,232,240,.1); box-shadow: 0 .6em 1.6em rgba(0,0,0,.3); transition: border-color .4s, background .4s, transform .5s cubic-bezier(.2,.7,.2,1); }
+  .mon-work .pic { position: relative; flex: none; aspect-ratio: 16 / 10; overflow: hidden; background: #101920; }
+  .mon-work img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; filter: brightness(.86) saturate(.92);
+    transition: transform .7s cubic-bezier(.2,.7,.2,1), filter .5s; }
+  .mon-work .cap { flex: 1; display: flex; flex-direction: column; padding: .85em .95em 1em; }
+  .mon-work .mon-tags { margin-bottom: .6em; }
+  .mon-work .mon-tags span { background: rgba(215,232,240,.05); }
+  .mon-work b { display: block; font-weight: 600; font-size: 1em; line-height: 1.2; color: #fff6ea; }
+  .mon-work p { font-size: .72em; line-height: 1.45; color: rgba(222,233,238,.72); margin-top: .35em; }
+  .mon-work .go { position: absolute; top: .55em; right: .55em; z-index: 1; display: grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: 50%;
+    font-size: .8em; color: #fff6ea; background: rgba(8,13,17,.6); border: 1px solid rgba(215,232,240,.2); opacity: 0; transform: translateY(.3em); transition: opacity .3s, transform .3s; }
+  .mon-work button:hover, .mon-work button:focus-visible { border-color: rgba(245,180,106,.4); background: rgba(245,180,106,.05); transform: translateY(-.2em); }
+  .mon-work button:hover img, .mon-work button:focus-visible img { transform: scale(1.05); filter: brightness(1) saturate(1); }
+  .mon-work button:hover .go, .mon-work button:focus-visible .go { opacity: 1; transform: none; }
+  .mon-work button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  /* experience: a line through time, oldest on the left; the job I'm in now glows */
+  .mon-tl { list-style: none; position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; padding-top: 1.5em; }
+  .mon-tl::before { content: ""; position: absolute; left: .35em; right: 0; top: .35em; height: 1px;
+    background: linear-gradient(90deg, rgba(215,232,240,.12), rgba(215,232,240,.32) 55%, rgba(245,180,106,.8)); }
+  .mon-tl li { position: relative; display: flex; flex-direction: column; padding: .85em .9em .9em; border-radius: .5em;
+    background: rgba(215,232,240,.035); border: 1px solid rgba(215,232,240,.09); }
+  .mon-tl li::before { content: ""; position: absolute; left: 0; top: -1.5em; width: .7em; height: .7em; border-radius: 50%; box-sizing: border-box;
+    background: #0c1419; border: 1px solid rgba(215,232,240,.55); }
+  .mon-tl li.now { background: rgba(245,180,106,.06); border-color: rgba(245,180,106,.28); }
+  .mon-tl li.now::before { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 .5em rgba(245,180,106,.9), 0 0 1.4em rgba(245,150,70,.5); }
+  .mon-tl time { font-size: .6em; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: rgba(215,232,240,.55); }
+  .mon-tl .now time { color: var(--amber); }
+  .mon-tl b { display: block; font-weight: 600; font-size: 1em; line-height: 1.25; color: #fff6ea; margin-top: .55em; }
+  .mon-tl em { display: block; font-style: normal; font-size: .78em; color: rgba(245,200,150,.9); margin-top: .15em; }
+  .mon-tl p { flex: 1; font-size: .68em; line-height: 1.5; color: rgba(222,233,238,.72); margin: .6em 0 .8em; }
+  /* phones: a 2 x 2 grid of pictures with just the names; the timeline runs down the left with no notes */
+  .skills.stacked .mon-body { padding: .75em .85em; }
+  .skills.stacked .os-side, .skills.stacked .os-task .search, .skills.stacked .os-task .tray > svg, .skills.stacked #osDate { display: none; }
+  .skills.stacked .os-area { padding: .5em .55em .4em; }
+  .skills.stacked .os-task { font-size: .62em; padding: 0 .6em; }
+  .skills.stacked .os-task .mid { left: .5em; transform: none; }
+  .skills.stacked .caps > * { width: 3em; }
+  .skills.stacked .mon-body h2 { font-size: 1.55em; white-space: nowrap; }
+  .skills.stacked .mon-head { margin-bottom: .8em; }
+  /* the rows share the screen: when it is short (tablets) they shrink a little so all three always fit */
+  .skills.stacked:not(.tab) .mon-work { grid-template-columns: 1fr; gap: .6em; flex: 0 1 auto; min-height: 0; grid-auto-rows: minmax(0, 5.6em); }
+  .skills.stacked:not(.tab) .mon-work button { flex-direction: row; align-items: stretch; }
+  .skills.stacked:not(.tab) .mon-work .pic { width: 42%; aspect-ratio: auto !important; min-height: 0; height: auto; }
+  .skills.stacked:not(.tab) .mon-work .cap { justify-content: center; padding: .6em .8em; }
+  .skills.stacked:not(.tab) .mon-work .mon-tags { margin-bottom: .4em; }
+  .skills.stacked:not(.tab) .mon-work .mon-tags span:nth-child(n+2) { display: none; }
+  .skills.stacked:not(.tab) .mon-work p { display: none; }
+  .skills.stacked:not(.tab) .mon-work b { font-size: .9em; }
+  .skills.stacked:not(.tab) .mon-work .go { opacity: 1; transform: none; width: 1.6em; height: 1.6em; }
+  .skills.tab .mon-work .go { opacity: 1; transform: none; }
+  .skills.stacked .mon-tl { grid-template-columns: 1fr; gap: .6em; padding: 0 0 0 1.4em; }
+  .skills.stacked .mon-tl::before { left: .35em; right: auto; top: .9em; bottom: .9em; width: 1px; height: auto;
+    background: linear-gradient(0deg, rgba(245,180,106,.8), rgba(215,232,240,.32) 45%, rgba(215,232,240,.12)); }
+  .skills.stacked .mon-tl li { padding: .6em .8em; }
+  .skills.stacked .mon-tl li::before { left: -1.4em; top: .95em; }
+  .skills.stacked .mon-tl b { margin-top: .3em; }
+  .skills.stacked .mon-tl p, .skills.stacked .mon-tl .mon-tags { display: none; }
+  /* a project's case study opens in a big window over the room (it grows out of its card) */
+  .case { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 3vh 16px; background: rgba(4,3,2,.62);
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); opacity: 0; visibility: hidden; transition: opacity .35s, visibility 0s .35s; }
+  .case.open { opacity: 1; visibility: visible; transition: opacity .3s; }
+  .case-win { position: relative; width: min(1040px, 100%); height: min(880px, 100%); display: flex; flex-direction: column; overflow: hidden; border-radius: 8px;
+    font-family: var(--f-ui); color: #e6eef1; background: #0c1318; border: 1px solid rgba(215,232,240,.13); box-shadow: 0 30px 90px rgba(0,0,0,.7); }
+  .case-bar { flex: none; display: flex; align-items: center; height: 44px; padding-left: 14px; background: #121b21; border-bottom: 1px solid rgba(215,232,240,.08); }
+  .case-app svg { display: block; width: 17px; height: 17px; fill: none; stroke: #f3c04f; stroke-width: 1.7; stroke-linejoin: round; }
+  .case-title { flex: 1; min-width: 0; margin-left: 12px; font-size: 12px; letter-spacing: .02em; color: rgba(215,232,240,.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .case-bar .caps { font-size: 16px; }
+  .case-bar .caps > * { width: 46px; cursor: pointer; }
+  .case-bar .caps > i { cursor: default; }
+  .case-bar .caps svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+  .case button:focus-visible, .case a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .case-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; outline: none; scrollbar-width: thin; scrollbar-color: rgba(215,232,240,.2) transparent; }
+  .case-hero { position: relative; height: min(420px, 48vh); overflow: hidden; background: #0a1014; }
+  .case-hero img { width: 100%; height: 100%; max-width: none; object-fit: cover; }
+  .case-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, #0c1318 2%, rgba(12,19,24,.55) 40%, rgba(12,19,24,0) 75%); }
+  .case-hero .head { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; max-width: 820px; margin: 0 auto; padding: 0 32px 22px; }
+  .case-eyebrow { font-size: 10px; font-weight: 500; font-stretch: 125%; letter-spacing: .5em; text-transform: uppercase; color: var(--amber); }
+  .case-hero h1 { font-family: var(--f-head); font-weight: 400; font-size: clamp(32px, 4vw, 52px); letter-spacing: .03em; line-height: 1.02; color: #fff3e4; text-shadow: var(--glow); margin-top: 10px; }
+  .case-inner { max-width: 820px; margin: 0 auto; padding: 8px 32px 56px; }
+  .case-lead { font-size: 17px; line-height: 1.65; color: rgba(236,240,242,.86); }
+  .case-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 26px 0 6px; border-radius: 10px; overflow: hidden; background: rgba(215,232,240,.09); }
+  .case-meta div { padding: 14px 16px; background: #0f171d; }
+  .case-meta small { display: block; font-size: 10px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: rgba(215,232,240,.45); }
+  .case-meta span { display: block; font-size: 14px; color: #f3ede4; margin-top: 4px; }
+  .case h3 { font-size: 10px; font-weight: 500; font-stretch: 125%; letter-spacing: .5em; text-transform: uppercase; color: var(--amber); margin: 38px 0 12px; }
+  .case-inner > p, .case-sec p { font-size: 15px; line-height: 1.75; color: rgba(222,233,238,.78); }
+  .case-sec p + p { margin-top: 12px; }
+  .case-shot { border-radius: 10px; overflow: hidden; background: #070b0e; border: 1px solid rgba(215,232,240,.1); }
+  .case-shot img { display: block; width: 100%; height: auto; max-width: 100%; }
+  .case-cap { margin-top: 12px; }
+  .case-cap small { font-size: 10px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: rgba(245,200,150,.85); }
+  .case-cap b { display: block; font-size: 16px; font-weight: 600; color: #fff6ea; margin-top: 4px; }
+  .case-cap p { font-size: 14px; line-height: 1.6; color: rgba(222,233,238,.72); margin-top: 4px; }
+  .case-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+  .case-thumbs button { padding: 0; border: 1px solid rgba(215,232,240,.12); border-radius: 8px; overflow: hidden; background: #070b0e; cursor: pointer; opacity: .55; transition: opacity .25s, border-color .25s; }
+  .case-thumbs button[aria-selected="true"] { opacity: 1; border-color: var(--amber); }
+  .case-thumbs button:hover { opacity: .9; }
+  .case-thumbs img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; max-width: none; }
+  .case-thumbs span { display: block; padding: 6px 8px; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(230,238,241,.8); text-align: left; }
+  .case-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; counter-reset: st; }
+  .case-steps li { counter-increment: st; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 99px; font-size: 13px; color: #efe9e0;
+    background: rgba(215,232,240,.05); border: 1px solid rgba(215,232,240,.12); }
+  .case-steps li::before { content: counter(st, decimal-leading-zero); font-size: 10px; font-weight: 600; color: var(--amber); }
+  .case-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .case-list li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.45; color: #efe9e0;
+    background: rgba(215,232,240,.04); border: 1px solid rgba(215,232,240,.09); }
+  .case-list li::before { content: ""; flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px rgba(245,180,106,.7); }
+  .case-live { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 18px; padding: 0 18px; border-radius: 99px; font-size: 11px; font-weight: 600; letter-spacing: .16em;
+    text-transform: uppercase; text-decoration: none; color: #1a1108; background: var(--amber); }
+  .case-next { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; margin-top: 48px; padding: 20px 22px; border-radius: 12px; cursor: pointer; text-align: left;
+    font-family: var(--f-ui); color: #fff6ea; background: rgba(215,232,240,.04); border: 1px solid rgba(215,232,240,.12); transition: border-color .3s, background .3s; }
+  .case-next:hover { border-color: rgba(245,180,106,.45); background: rgba(245,180,106,.06); }
+  .case-next small { display: block; font-size: 10px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: rgba(215,232,240,.5); }
+  .case-next b { display: block; font-size: 20px; font-weight: 600; margin-top: 4px; }
+  .case-next span { font-size: 22px; color: var(--amber); }
+  @media (max-width: 640px) {
+    .case { padding: 10px; }
+    .case-hero { height: 34vh; }
+    .case-hero .head, .case-inner { padding-left: 18px; padding-right: 18px; }
+    .case-meta { grid-template-columns: 1fr; }
+    .case-thumbs { grid-template-columns: repeat(2, 1fr); }
+    .case-list { grid-template-columns: 1fr; }
+    .case-lead { font-size: 16px; }
+  }
+  /* the resume itself opens over the room */
+  .resume-modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px 16px; background: rgba(4,3,2,.82);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); opacity: 0; visibility: hidden; transition: opacity .35s, visibility 0s .35s; }
+  .resume-modal.open { opacity: 1; visibility: visible; transition: opacity .35s; }
+  .resume-sheet { position: relative; width: min(820px, 100%); max-height: calc(100svh - 48px); overflow-y: auto; overscroll-behavior: contain;
+    text-align: left; font-family: var(--f-ui); background: #f3eadc; color: #2a1f15; box-shadow: 0 24px 70px rgba(0,0,0,.65);
+    transform: translateY(16px) scale(.98); transition: transform .5s cubic-bezier(.2,.8,.2,1);
+    scrollbar-width: thin; scrollbar-color: rgba(42,31,21,.28) transparent; }
+  .resume-modal.open .resume-sheet { transform: none; }
+  .cv-top { padding: 34px 38px 22px; }
+  .resume-sheet .eyebrow { font-family: var(--f-ui); font-stretch: 125%; font-weight: 500; font-size: 10px; letter-spacing: .5em; text-transform: uppercase; color: #9a5a22; }
+  .resume-sheet h2 { font-family: var(--f-head); font-weight: 400; font-size: 54px; letter-spacing: .035em; line-height: 1; margin-top: 10px; color: #241a10; }
+  .cv-role { font-weight: 500; font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: #8a6b4c; margin-top: 9px; }
+  .cv-mail { display: inline-block; margin-top: 12px; font-size: 12.5px; color: #9a5a22; text-decoration: none; border-bottom: 1px solid rgba(154,90,34,.35); }
+  .cv-mail:hover { color: #7a4416; }
+  .cv-grid { display: grid; grid-template-columns: 1.65fr 1fr; border-top: 1px solid rgba(42,31,21,.14); }
+  .cv-main { padding: 26px 30px 38px 38px; min-width: 0; }
+  .cv-side { padding: 26px 38px 38px 26px; min-width: 0; background: rgba(42,31,21,.045); border-left: 1px solid rgba(42,31,21,.1); }
+  .resume-sheet h3 { font-family: var(--f-head); font-weight: 400; font-size: 22px; letter-spacing: .05em; line-height: 1; color: #241a10; margin: 26px 0 12px; }
+  .cv-main > h3:first-child, .cv-side > h3:first-child { margin-top: 0; }
+  .resume-sheet p { font-family: var(--f-ui); font-size: 13.5px; line-height: 1.62; color: #5b4a3a; margin: 0; }
+  .cv-job { margin-bottom: 20px; }
+  .cv-job:last-child { margin-bottom: 0; }
+  .cv-job b { display: block; font-weight: 600; font-size: 14px; line-height: 1.25; color: #241a10; }
+  .cv-job em { display: block; font-style: normal; font-size: 10px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: #9a5a22; margin-top: 5px; }
+  .cv-job ul { list-style: none; margin-top: 9px; }
+  .cv-job li { position: relative; padding-left: 15px; font-size: 13px; line-height: 1.55; color: #5b4a3a; margin-top: 6px; }
+  .cv-job li::before { content: ""; position: absolute; left: 1px; top: .62em; width: 4px; height: 4px; border-radius: 50%; background: #c08a4a; }
+  .cv-side ul { list-style: none; }
+  .cv-side li { font-size: 12.5px; line-height: 1.45; color: #5b4a3a; padding: 5px 0; border-bottom: 1px solid rgba(42,31,21,.08); }
+  .cv-side li:last-child { border-bottom: 0; }
+  .resume-close { position: fixed; top: 10px; right: 12px; width: 44px; height: 44px; border: 0; border-radius: 50%; cursor: pointer;
+    background: rgba(12,8,6,.6); color: #f3eadc; font-size: 26px; line-height: 1; }
+  .resume-close:hover { background: rgba(12,8,6,.85); }
+  .resume-close:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  @media (max-width: 720px) {
+    /* on a phone the close button sits at the bottom, within thumb reach and clear of the sound label */
+    .resume-close { top: auto; bottom: 16px; right: 16px; background: rgba(12,8,6,.82); }
+    .cv-grid { grid-template-columns: 1fr; }
+    .cv-top { padding: 28px 22px 18px; }
+    .resume-sheet h2 { font-size: 40px; }
+    .cv-main { padding: 22px 22px 26px; }
+    .cv-side { padding: 24px 22px 30px; border-left: 0; border-top: 1px solid rgba(42,31,21,.12); }
+    .resume-sheet h3 { font-size: 20px; }
+  }
+
+  /* the last scene: he sits down on the bean bag, and this is where you reach him */
+  .contact { position: fixed; inset: 0; z-index: 4; opacity: 0; visibility: hidden; background: #060403; overflow: hidden; }
+  /* the whole room, one picture: the camera pulls back from the monitor and glides across to the bean bag */
+  .roomwide { position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0; visibility: hidden; overflow: hidden; background: #060403; }
+  .roomwide img { position: absolute; left: 0; top: 0; width: 2572px; height: 941px; max-width: none; transform-origin: 0 0; will-change: transform; }
+  .contact .bean { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 32% 50%; }
+  .contact-shade { position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(90deg, rgba(4,3,2,0) 26%, rgba(4,3,2,.5) 52%, rgba(6,4,3,.88) 86%),
+      linear-gradient(0deg, rgba(4,3,2,.6), rgba(4,3,2,.18) 14%, transparent 26%); }
+  .contact-card { position: absolute; right: 6vw; top: 50%; transform: translateY(-50%); width: min(400px, 38vw); }
+  .contact-card > * { opacity: 0; }
+  .contact .eyebrow { font-family: var(--f-ui); font-stretch: 125%; font-weight: 500; font-size: 10px; letter-spacing: .5em; padding-left: .5em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 12px; }
+  .contact h2 { font-family: var(--f-head); font-weight: 400; font-size: clamp(38px, 3.8vw, 60px); letter-spacing: .035em; line-height: 1;
+    color: #fff3e4; text-shadow: var(--glow); }
+  .contact-card > p { font-family: var(--f-ui); font-size: 14px; line-height: 1.6; color: rgba(239,228,210,.78); margin: 14px 0 0; }
+  .links { list-style: none; display: grid; gap: 9px; margin-top: 24px; }
+  .links a { display: flex; align-items: center; gap: 13px; padding: 12px 15px; border-radius: 3px; text-decoration: none; color: inherit;
+    background: rgba(10,6,3,.5); border: 1px solid rgba(245,180,106,.26); transition: border-color .3s, background .3s, transform .35s cubic-bezier(.2,.7,.2,1); }
+  .links svg { flex: none; width: 17px; height: 17px; fill: none; stroke: var(--amber); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: stroke .3s; }
+  .links span { min-width: 0; }
+  .links small { display: block; font-size: 8.5px; font-weight: 500; letter-spacing: .26em; text-transform: uppercase; color: rgba(245,180,106,.8); }
+  .links b { display: block; font-weight: 500; font-size: 13px; line-height: 1.3; color: #f4ead9; margin-top: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .links i { margin-left: auto; font-style: normal; font-size: 13px; color: rgba(239,228,210,.45); transition: color .3s, transform .35s cubic-bezier(.2,.7,.2,1); }
+  .links a:hover, .links a:focus-visible { border-color: rgba(245,180,106,.75); background: rgba(245,150,70,.12); transform: translateX(4px); }
+  .links a:hover i, .links a:focus-visible i { color: var(--amber); transform: translateX(2px); }
+  .links a:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  /* phones: he sits in the top half, the card sits under him */
+  @media (max-width: 760px), (max-aspect-ratio: 1/1) {
+    .contact .bean { height: 46%; object-position: 42% 32%; }
+    .contact-shade { background: linear-gradient(180deg, rgba(4,3,2,.25) 0%, rgba(4,3,2,.1) 26%, rgba(6,4,3,.92) 46%, #060403 56%); }
+    .contact-card { right: 16px; left: 16px; top: auto; bottom: calc(9vh + 46px); width: auto; transform: none; }
+    .contact h2 { font-size: 40px; }
+    .contact-card > p { font-size: 13px; margin-top: 10px; }
+    .links { margin-top: 16px; gap: 7px; }
+    .links a { padding: 10px 13px; }
+  }
+  @media (max-width: 600px) {
+    .sound { right: 14px; }
+    .chapter { left: 16px; }
+    .chapter i { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" aria-label="Balayokesh's room">
+  <div class="room" id="room">
+    <img src="assets/new-sign.webp" alt="" class="align-sign layer-off">
+    <div class="glow" id="glow">
+      <img src="assets/new-sign.webp" alt="" class="align-sign layer-sign" id="sign">
+      <img src="assets/new-close.webp" alt="" class="align-close layer-close" id="close">
+    </div>
+    <img src="assets/room-plate.webp" alt="Balayokesh's portfolio room: neon sign, mirror, bookshelf, desk and frames" class="full layer-lit" id="lit">
+    <img src="assets/char-cut.webp" alt="Balayokesh standing in the room" class="char" id="char">
+    <div class="fx-outer" id="fxOuter">
+      <div class="fx" id="fx">
+        <div class="haze" id="haze1"></div>
+        <div class="haze two" id="haze2"></div>
+        <div class="bloom"></div>
+        <div class="flare wide"></div>
+        <div class="flare"></div>
+      </div>
+    </div>
+    <video class="walk" id="walk" muted playsinline preload="auto" aria-label="Balayokesh walks to the floor mirror and smiles at the reflection"></video>
+    <div class="glass"><div class="sheen" id="sheen"></div></div>
+  </div>
+  <div class="wide" id="wide"><img src="assets/about-wide.webp" alt="Balayokesh smiling at the reflection in the tall wooden mirror"><video class="pull" id="pull" muted playsinline preload="auto"></video></div>
+  <div class="desk" id="desk"><div class="lamp-glow" id="lampGlow"></div><canvas class="steam" id="steam" width="240" height="310"></canvas><div class="mon-spill" id="monSpill"></div><div class="mon-light" id="monLight"></div><img src="assets/desk.webp" alt="Balayokesh's desk: monitor, desk lamp, pencil cup, books, four sticky notes on the wall, his resume in a copper glass frame and a cup of coffee"><div class="gframe" aria-hidden="true">
+    <img src="assets/glass-stand.webp" alt="">
+    <div class="gf-page" id="gfPage">
+      <div class="gf-name">Balayokesh S S</div>
+      <div class="gf-role">UX/UI Designer</div>
+      <div class="gf-contact">balayokesh1708@gmail.com &middot; +91 93455 04629</div>
+      <hr>
+      <h4>Profile</h4>
+      <p>UX/UI Designer with nearly 2 years of experience designing game user flows, interactive widgets and responsive websites.</p>
+      <h4>Experience</h4>
+      <div class="gf-job"><b>UX Designer &middot; Nytwolf Games</b><span>2025 &ndash; 2026</span></div>
+      <div class="gf-job"><b>UX Designer Intern &middot; Nytwolf Games</b><span>2025</span></div>
+      <div class="gf-job"><b>UX/UI Designer &middot; Leadpro Infotech</b><span>2024 &ndash; 2025</span></div>
+      <h4>Education</h4>
+      <div class="gf-job"><b>B.Sc. Information Technology</b><span>2020 &ndash; 2023</span></div>
+      <p>KG College of Arts and Science</p>
+      <h4>Key skills</h4>
+      <p>UX/UI design &middot; User research &middot; Wireframing &middot; Prototyping &middot; Design systems &middot; User testing</p>
+      <h4>Tools</h4>
+      <p>Figma &middot; Adobe Photoshop &middot; Adobe Illustrator &middot; Framer &middot; Webflow</p>
+      <div class="gf-glass"></div>
+    </div>
+    <img src="assets/glass-frame.webp" alt="">
+  </div></div>
+  <div class="dip" id="dip"></div>
+  <canvas class="dust" id="dust"></canvas>
+</div>
+<div class="about-shade" id="aboutShade"></div>
+<section class="about" id="about" aria-label="About me">
+  <div class="eyebrow">About me</div>
+  <h2>Balayokesh</h2>
+  <div class="role">UX Designer</div>
+  <div class="rule"></div>
+  <p>I'm a UX designer. I take hard problems and make them simple to use. First I talk to the people who will use it and learn what they need. Then I sketch, build and test until every screen is easy to understand.</p>
+  <ul><li>User Research</li><li>Wireframing</li><li>Prototyping</li><li>Usability Testing</li><li>Info Architecture</li><li>Figma</li></ul>
+</section>
+
+<section class="skills" id="skills" aria-label="Skills">
+  <div class="dof" id="dof"></div>
+  <div class="lamp-flare" id="lampFlare"><i></i><i></i><b></b></div>
+  <header class="skills-head" id="skillsHead">
+    <div class="eyebrow">Skills</div>
+    <h2>What I work with</h2>
+  </header>
+  <!-- the writing on the four notes in the picture (placeholder topics except the first) -->
+  <ul class="jots" id="jots">
+    <li class="jot"><b>AI I use</b><span>ChatGPT</span><span>Claude AI</span><span>Antigravity</span></li>
+    <li class="jot"><b>Design tools</b><span>Figma</span><span>Adobe Photoshop</span><span>Adobe Illustrator</span></li>
+    <li class="jot"><b>Research</b><span>User interviews</span><span>Usability testing</span><span>Surveys</span></li>
+    <li class="jot"><b>Design skills</b><span>Wireframing</span><span>Prototyping</span><span>Design systems</span></li>
+  </ul>
+  <button class="frame-hit" id="frameHit" type="button" aria-label="Open my resume"></button>
+  <div class="resume-cta" id="resumeCta">
+    <div class="eyebrow">Resume</div>
+    <h2>My resume</h2>
+    <p>My experience, education and skills, all on one page.</p>
+    <button type="button" id="resumeOpen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h6M9.5 15.5h6"/></svg>Read my resume</button>
+  </div>
+  <!-- the monitor: projects first, then experience (both from balayokesh's portfolio site) -->
+  <div class="mon-boot" id="monBoot" aria-hidden="true">Balayokesh</div>
+  <div class="mon-ui" id="monUi">
+    <div class="os-area">
+    <div class="os-win">
+      <div class="os-title" aria-hidden="true"><span class="app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/></svg></span><span class="name"><span>Projects</span><span>Experience</span></span><span class="caps"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12h11"/></svg></i><i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.6"/></svg></i><i class="cls"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></i></span></div>
+      <div class="os-main">
+      <nav class="os-side" aria-label="Monitor pages"><small>Portfolio</small>
+        <button type="button" id="sbProj" data-go="s10"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>Projects</button>
+        <button type="button" id="sbExp" data-go="s11"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/></svg>Experience</button>
+      </nav>
+    <div class="mon-panes">
+    <section class="mon-body" id="monProj" aria-label="Projects">
+      <div class="mon-head"><div><div class="eyebrow">Projects</div><h2>Selected work</h2></div><span class="count">03 projects</span></div>
+      <ul class="mon-work">
+        <li><button type="button" data-case="severna">
+          <div class="pic"><img src="assets/work-severna.webp" alt="Severna: Blood &amp; Betrayal, a dark-fantasy strategy game" decoding="async"><span class="go" aria-hidden="true">+</span></div>
+          <div class="cap"><div class="mon-tags"><span>Game UI</span><span>UI &amp; UX</span></div><b>Severna: Blood &amp; Betrayal</b><p>In-game widgets, a tactical HUD and interactive screens for a PC strategy game.</p></div></button></li>
+        <li><button type="button" data-case="nytwolf">
+          <div class="pic"><img src="assets/work-nytwolf.webp" alt="Nytwolf Games studio website" decoding="async"><span class="go" aria-hidden="true">+</span></div>
+          <div class="cap"><div class="mon-tags"><span>Web design</span><span>UI &amp; UX</span></div><b>Nytwolf Games</b><p>Website for an independent game studio, with a responsive layout and game showcases.</p></div></button></li>
+        <li><button type="button" data-case="cotons">
+          <div class="pic"><img src="assets/work-cotons.webp" alt="Cotons AI lead management dashboard" decoding="async"><span class="go" aria-hidden="true">+</span></div>
+          <div class="cap"><div class="mon-tags"><span>B2B SaaS</span><span>Health tech</span></div><b>Cotons AI</b><p>Lead management and sales pipeline for medical device sales teams.</p></div></button></li>
+      </ul>
+    </section>
+    <section class="mon-body" id="monExp" aria-label="Experience">
+      <div class="mon-head"><div><div class="eyebrow">Experience</div><h2>Where I've worked</h2></div><span class="count open">Open to work</span></div>
+      <ol class="mon-tl">
+        <li><time>Mar 2024 – Mar 2025</time><b>UX/UI Designer</b><em>Leadpro Infotech</em>
+          <p>Client websites, B2B SaaS apps and dashboards. Built design tokens and Figma libraries.</p>
+          <div class="mon-tags"><span>Websites</span><span>B2B SaaS</span><span>Design systems</span></div></li>
+        <li><time>Apr – Jun 2025</time><b>UX/UI Designer Intern</b><em>Nytwolf Games</em>
+          <p>Designed the studio's responsive website and prototyped player journeys and game UI.</p>
+          <div class="mon-tags"><span>Website</span><span>Prototyping</span></div></li>
+        <li class="now"><time>Jul 2025 – Oct 2026</time><b>UX/UI Designer</b><em>Nytwolf Games</em>
+          <p>Lead UI/UX for Severna: Blood &amp; Betrayal. 20+ HUD widgets and combat overlays.</p>
+          <div class="mon-tags"><span>Game UI</span><span>Tactical HUD</span><span>PC strategy</span></div></li>
+      </ol>
+    </section>
+    </div>
+      </div>
+    </div>
+    </div>
+    <div class="os-task">
+      <div class="mid">
+        <span class="ti start" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></span>
+        <span class="search" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></svg>Search</span>
+        <button type="button" class="ti d1" data-go="s10" aria-label="Projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg><span class="ind"></span><span class="tip">Projects</span></button>
+        <button type="button" class="ti d2" data-go="s11" aria-label="Experience"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/></svg><span class="ind"></span><span class="tip">Experience</span></button>
+        <button type="button" class="ti d3" id="dockResume" aria-label="Resume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h6M9.5 15.5h6"/></svg><span class="tip">Resume</span></button>
+        <a class="ti d4" href="mailto:balayokesh1708@gmail.com" aria-label="Email me"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span class="tip">Email me</span></a>
+      </div>
+      <div class="tray" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m7 14 5-5 5 5"/></svg><svg viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 15.8a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg><svg viewBox="0 0 24 24"><rect x="2.5" y="7.5" width="17" height="9" rx="2"/><rect x="4.5" y="9.5" width="10" height="5" rx=".8" fill="currentColor" stroke="none"/><path d="M21.5 10.5v3"/></svg>
+        <span class="clock"><span id="osTime"></span><span id="osDate"></span></span></div>
+    </div>
+  </div>
+</section>
+
+<div class="roomwide" id="roomWide" aria-hidden="true"><img src="assets/room-wide.webp" alt="" decoding="async"></div>
+<section class="contact" id="contact" aria-label="Contact">
+  <img class="bean" src="assets/beanbag.webp" alt="Balayokesh sitting back in the olive bean bag in his room, smiling at the camera" decoding="async">
+  <div class="contact-shade"></div>
+  <div class="contact-card" id="contactCard">
+    <div class="eyebrow">Contact</div>
+    <h2>Let&rsquo;s talk</h2>
+    <p>That&rsquo;s the room. If you have something you want designed, or a role you think fits, I&rsquo;d like to hear about it.</p>
+    <ul class="links">
+        <li><a href="mailto:balayokesh1708@gmail.com"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span><small>Email</small><b>balayokesh1708@gmail.com</b></span><i aria-hidden="true">&rarr;</i></a></li>
+        <li><a href="tel:+919345504629"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h3l1.4 4-2 1.4a12 12 0 0 0 5.7 5.7l1.4-2 4 1.4v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 5.5 5.7 2 2 0 0 1 7.5 3.5z"/></svg><span><small>Phone</small><b>+91 93455 04629</b></span><i aria-hidden="true">&rarr;</i></a></li>
+        <li><a href="https://www.linkedin.com/in/balayokesh-s-s-583b04235/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 10.5V17M8 7.6v.1M12 17v-3.6a2.1 2.1 0 0 1 4.2 0V17"/></svg><span><small>LinkedIn</small><b>balayokesh-s-s</b></span><i aria-hidden="true">&#8599;</i></a></li>
+        <li><a href="assets/Balayokesh_Resume.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M12 11v6m0 0-2.2-2.2M12 17l2.2-2.2"/></svg><span><small>Resume</small><b>Open the PDF</b></span><i aria-hidden="true">&#8599;</i></a></li>
+    </ul>
+  </div>
+</section>
+
+<div class="case" id="case" role="dialog" aria-modal="true" aria-labelledby="caseTitle" aria-hidden="true">
+  <div class="case-win" id="caseWin">
+    <div class="case-bar"><span class="case-app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg></span><span class="case-title" id="caseTitle"></span>
+      <span class="caps"><i aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12h11"/></svg></i><i aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.6"/></svg></i><button type="button" class="cls" id="caseClose" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button></span></div>
+    <div class="case-body" id="caseBody" tabindex="-1"></div>
+  </div>
+</div>
+
+<div class="resume-modal" id="resumeModal" role="dialog" aria-modal="true" aria-labelledby="resumeTitle" aria-hidden="true">
+  <div class="resume-sheet">
+    <div class="cv-top">
+      <div class="eyebrow">Resume</div>
+      <h2 id="resumeTitle">Balayokesh S S</h2>
+      <div class="cv-role">UX/UI Designer</div>
+      <a class="cv-mail" href="mailto:balayokesh1708@gmail.com">balayokesh1708@gmail.com</a>
+    </div>
+    <div class="cv-grid">
+    <div class="cv-main">
+      <h3>Profile</h3>
+      <p>UX/UI Designer with nearly 2 years of experience designing game user flows, interactive widgets and responsive websites. Skilled in analysing user interactions and requirements to create intuitive experiences, with a focus on clear visual hierarchy and friendly interface design.</p>
+      <h3>Experience</h3>
+      <div class="cv-job"><b>UX Designer &middot; Nytwolf Games</b><em>Jul 2025 &ndash; Oct 2026</em><ul><li>Analysed relevant games and created user flows based on key interactions and gameplay patterns.</li><li>Designed 20+ in-game widgets, focusing on clear visual hierarchy, usability and a consistent user experience.</li><li>Created game UI screens and worked with developers so the final build matched the approved designs.</li><li>Reviewed developed screens, found UI inconsistencies and worked with developers to fix them.</li></ul></div>
+
+      <div class="cv-job"><b>UX Designer Intern &middot; Nytwolf Games</b><em>Apr 2025 &ndash; Jun 2025</em><ul><li>Researched similar games to understand game mechanics, UI patterns and player experience.</li><li>Designed low-fidelity wireframes for screen layouts, information hierarchy and user flows.</li></ul></div>
+
+      <div class="cv-job"><b>UX/UI Designer &middot; Leadpro Infotech</b><em>Mar 2024 &ndash; Mar 2025</em><ul><li>Created responsive application designs from web to mobile, with supporting and flow screens.</li><li>Designed and built web admin interfaces in HTML, CSS and Bootstrap, improving the admin panel.</li></ul></div>
+
+      <h3>Projects</h3>
+      <div class="cv-job"><b>Web Admin Portal &middot; Cotons AI</b><em>B2B SaaS &middot; Health tech</em><ul><li>A web admin portal to manage and track product purchase data, with real-time reporting.</li></ul></div>
+
+      <div class="cv-job"><b>Nytwolf Games Website</b><em>Responsive web</em><ul><li>A responsive website showing the studio and its gaming platform.</li></ul></div>
+
+      <div class="cv-job"><b>Teqball Tamil Nadu Website</b><em>Responsive web</em><ul><li>A responsive website built from the client&rsquo;s own requirements and content.</li></ul></div>
+
+      <h3>Education</h3>
+      <div class="cv-job"><b>KG College of Arts and Science &middot; Bharathiar University</b><em>2020 &ndash; 2023</em>
+        <p style="margin-top:8px">Bachelor of Science, Information Technology.</p></div>
+    </div>
+    <div class="cv-side">
+      <h3>Key skills</h3>
+      <ul><li>UX/UI design</li><li>User research</li><li>Responsive design</li><li>Wireframing</li><li>Design systems</li><li>User flows</li><li>Prototyping</li><li>User testing</li></ul>
+      <h3>Tools</h3>
+      <ul><li>Figma</li><li>Adobe Photoshop</li><li>Adobe Illustrator</li><li>Framer</li><li>Webflow</li><li>ChatGPT</li><li>Claude AI</li><li>Antigravity</li><li>Google Stitch</li></ul>
+      <h3>Certification</h3>
+      <ul><li>UI/UX Design Training &mdash; Internshala Trainings</li><li>UX/UI Design Certification &mdash; Leadpro Infotech</li></ul>
+      <h3>Languages</h3>
+      <ul><li>Tamil</li><li>English</li><li>Telugu</li></ul>
+    </div>
+    </div>
+  </div>
+  <button class="resume-close" id="resumeClose" type="button" aria-label="Close resume">&times;</button>
+</div>
+
+<div class="grade" id="grade"></div>
+<div class="exposure" id="exposure"></div>
+<div class="vignette"></div>
+<div class="grain" id="grain"></div>
+<div class="bar top" id="barTop"></div>
+<div class="bar bottom" id="barBottom"></div>
+<div class="curtain" id="curtain"></div>
+
+<div class="title" id="title" aria-label="Welcome to my room. Balayokesh, UX/UI Designer">
+  <small id="titleSmall">Welcome to my room</small>
+  <h1 id="titleName">Balayokesh</h1>
+  <div class="rule" id="titleRule"></div>
+  <div class="role" id="titleRole">UX/UI Designer</div>
+</div>
+
+<div class="chapter" id="chapter"><b id="chapNum">01</b><i></i><span id="chapName">Darkness</span></div>
+<div class="hint" id="hint"><span id="hintText">Scroll</span><i></i></div>
+<nav class="dots" id="dots" aria-label="Scenes"></nav>
+<button class="sound" id="sound" aria-pressed="false" aria-label="Sound"><span class="eq"><i></i><i></i><i></i></span><span id="soundLabel">Sound off</span></button>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateName" aria-describedby="gateNote">
+  <div class="gate-wall" aria-hidden="true"></div>
+  <div class="hall" id="hall">
+    <div class="floor" aria-hidden="true"></div>
+    <div class="spill" id="doorSpill" aria-hidden="true"><i id="doorSpillLight"></i></div>
+    <div class="opening">
+      <div class="beyond" id="beyond" aria-hidden="true"></div>
+      <div class="door" id="door">
+        <div class="door-edge" aria-hidden="true"></div>
+        <div class="panel p1" aria-hidden="true"></div><div class="panel p2" aria-hidden="true"></div>
+        <div class="hinge h1" aria-hidden="true"></div><div class="hinge h2" aria-hidden="true"></div>
+        <div class="plate" id="gateName"><small>The studio of</small><b>Balayokesh</b></div>
+        <div class="note" id="gateNote">The door is open. Step in and look around.</div>
+        <div class="handle" aria-hidden="true"><div class="lever" id="doorLever"></div><div class="rose"></div></div>
+        <div class="gate-btns">
+          <button class="primary" id="enterSound"><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Enter with sound</button>
+          <button class="quiet" id="enterQuiet"><svg class="mute" viewBox="0 0 14 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 4.2h2.4L6.6 1.5v9L3.4 7.8H1z" fill="currentColor" stroke="none"/><path d="M9 4l4 4M13 4l-4 4"/></svg><span>Enter without sound</span></button>
+        </div>
+        <div class="door-shade" id="doorShade" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="leak" id="doorLeak" aria-hidden="true"></div>
+    <div class="casing" aria-hidden="true"></div>
+  </div>
+  <div class="gate-dim" id="gateDim" aria-hidden="true"></div>
+  <div class="gate-grain" id="gateGrain" aria-hidden="true"></div>
+  <div class="gate-flood" id="gateFlood" aria-hidden="true"></div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+
+const IMG_W = 1920, IMG_H = 1080;
+const SIGN = { x: 0.5574, y: 0.2796, w: 0.2675 };   // the neon sign in the room image
+const CLOSE = { x: 0.3575 + 0.3853 / 2, y: 0.1238 + 0.3624 / 2, k: 1 / 0.3853 };
+// 04 -> 05: the walk to the mirror (video, scrubbed by scroll). The reflected face ends near
+// x 0.33 of the frame and clears x 0.42, which is where the About copy may start.
+const FACE = { x: 0.34, y: 0.36, right: 0.42 };
+// the pull-back is anchored on his reflected eyes: midpoint, and the distance between them
+const EYES_VIDEO = { x: 664 / 1920, y: 398 / 1080, h: 82 / 1080 };
+const EYES_WIDE = { x: 494 / 1672, y: 331 / 941, h: 32.5 / 941 };
+const PULL_CROP = 1571 / 1920;   // the pull-back video's first frame = this top-left share of the walk's last frame
+const WIDE_AR = 16 / 9, wideL = document.getElementById('wide'), dip = document.getElementById('dip');
+const walk = document.getElementById('walk');
+const smallVideo = (() => {
+  const c = navigator.connection;
+  if (c && (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''))) return true;
+  return Math.max(innerWidth, innerHeight) * (devicePixelRatio || 1) < 1000;
+})();
+let walkReady = false, walkSeekTo = -1;
+(async () => {
+  // every frame is a keyframe, so seeking is instant in both directions. The full 1080p cut goes to
+  // any screen with enough real pixels (phones included: 390px at 3x is 1170 pixels across); only
+  // data-saver, slow connections and genuinely small screens get the 720p cut
+  const src = smallVideo ? 'assets/mirror-walk-720.mp4' : 'assets/mirror-walk.mp4';
+  try {
+    const blob = await (await fetch(src)).blob();     // held in memory: no network on every seek
+    walk.src = URL.createObjectURL(blob);
+    // if the host refuses blob: media, stream the file directly instead
+    walk.addEventListener('error', () => { if (walk.src.startsWith('blob:')) walk.src = src; }, { once: true });
+  } catch (e) { walk.src = src; }
+  walk.addEventListener('loadeddata', () => { walkReady = true; }, { once: true });
+  walk.addEventListener('seeked', () => {
+    if (walkSeekTo >= 0) { const t = walkSeekTo; walkSeekTo = -1; walk.currentTime = t; }
+  });
+})();
+function scrubWalk(p) {
+  if (!walkReady || !walk.duration) return;
+  const t = Math.min(walk.duration - 0.04, Math.max(0, p * walk.duration));
+  if (Math.abs(t - walk.currentTime) < 0.02) return;
+  if (walk.seeking) walkSeekTo = t;                  // only the latest position matters
+  else walk.currentTime = t;
+}
+// 05 -> 06: one continuous camera pull-back from the face to the wide shot, scrubbed the same way
+const pull = document.getElementById('pull');
+let pullReady = false, pullSeekTo = -1, pullCovers = false;
+(async () => {
+  // the Kling clip is 1280x720; mirror-pull.mp4 is it resampled to 1080p once with a sharp filter,
+  // which holds up far better than the browser stretching 720p across the screen
+  const src = smallVideo ? 'assets/mirror-pull-720.mp4' : 'assets/mirror-pull.mp4';
+  try {
+    pull.src = URL.createObjectURL(await (await fetch(src)).blob());
+    pull.addEventListener('error', () => { if (pull.src.startsWith('blob:')) pull.src = src; }, { once: true });
+  } catch (e) { pull.src = src; }
+  pull.addEventListener('loadeddata', () => { pullReady = true; }, { once: true });
+  pull.addEventListener('seeked', () => {
+    if (pullSeekTo >= 0) { const t = pullSeekTo; pullSeekTo = -1; pull.currentTime = t; }
+  });
+})();
+function scrubPull(p) {
+  if (!pullReady || !pull.duration) return;
+  const t = Math.min(pull.duration - 0.04, Math.max(0, p * pull.duration));
+  if (Math.abs(t - pull.currentTime) < 0.02) return;
+  if (pull.seeking) pullSeekTo = t;
+  else pull.currentTime = t;
+}
+
+const $ = id => document.getElementById(id);
+const room = $('room'), glow = $('glow'), signL = $('sign'), closeL = $('close'), litL = $('lit');
+const fxOuter = $('fxOuter'), fx = $('fx');
+const curtain = $('curtain'), hint = $('hint'), hintText = $('hintText'), dotsNav = $('dots');
+const chapter = $('chapter'), chapNum = $('chapNum'), chapName = $('chapName');
+const bars = [$('barTop'), $('barBottom')];
+const grade = $('grade'), exposure = $('exposure');
+const charL = $('char');
+const stage = document.querySelector('.stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const SCENES = [
+  { id: 's2', name: 'Welcome',     hint: 'Scroll to step closer' },
+  { id: 's3', name: 'Name',        hint: 'Scroll to enter the room' },
+  { id: 's4', name: 'The room',    hint: 'Scroll to look in the mirror' },
+  { id: 's5', name: 'About',       hint: 'Scroll to know more' },
+  { id: 's7', name: 'Skills',      hint: 'Scroll to read my notes' },
+  { id: 's9', name: 'Resume',      hint: 'Scroll to see my projects' },
+  { id: 's10', name: 'Projects',   hint: 'Scroll to see my experience' },
+  { id: 's11', name: 'Experience', hint: 'Scroll to get in touch' },
+  { id: 's12', name: 'Contact',    hint: '' },
+];
+// the desk shot (1672x941): the monitor's centre, where the strip seam falls; then, as fractions of
+// the picture, the four notes on the wall (the first hangs a little crooked) and the resume frame
+const DESK = { cx: 0.495, seam: 0.86 };
+const NOTES = [
+  { x0: 0.1694, x1: 0.2187, y0: 0.1445, y1: 0.2368, r: -3.8 },
+  { x0: 0.2319, x1: 0.2801, y0: 0.1506, y1: 0.2398, r: 0 },
+  { x0: 0.1709, x1: 0.2183, y0: 0.2611, y1: 0.3482, r: 0 },
+  { x0: 0.2319, x1: 0.2797, y0: 0.2657, y1: 0.3518, r: 0 },
+];
+const NOTES_BOX = { x0: 0.169, x1: 0.2805, y0: 0.134, y1: 0.353 };
+const FRAME = { x0: 0.675, x1: 0.7625, y0: 0.415, y1: 0.605 };
+const BULB = { x: 0.789, y: 0.253 };
+const MON = { x0: 0.3409, x1: 0.6537, y0: 0.1552, y1: 0.4687 };   // the monitor's glass   // the lamp's bulb, inside the shade
+const lampGlow = document.getElementById('lampGlow'), lampFlare = document.getElementById('lampFlare'), dofL = document.getElementById('dof');
+// where the desk shot is on screen this frame (the dust uses it)
+const deskCam = { on: false, X: 0, Y: 0, W: 1, H: 1, mv: 0 };
+// a smooth wobble from a few sine waves: the handheld feel
+const wob = (t, a, b, c) => (Math.sin(t * a) + Math.sin(t * b + 1.3) * 0.6 + Math.sin(t * c + 2.1) * 0.3) / 1.9;
+const deskL = document.getElementById('desk');
+const gfPage = document.getElementById('gfPage');
+// maps the 820 x 1200 page onto the glass inside the copper frame (measured on desk.webp)
+const GF_MATRIX = '0.1324518, 0.005414917, 0, -0.0000292756, -0.0213357, 0.1355483, 0, -0.000005311905, 0, 0, 1, 0, 42.20981, 15.0633, 0, 1';
+// decode the desk picture ahead of time, so its first frame on screen (mid whip-pan) is never blank
+{ const im = deskL.querySelector('img'); const dec = () => im.decode().catch(() => {}); im.complete ? dec() : im.addEventListener('load', dec, { once: true }); }
+const skillsUI = document.getElementById('skills'), skillsHead = document.getElementById('skillsHead');
+const jotEls = [...document.querySelectorAll('#jots .jot')];
+const frameHit = document.getElementById('frameHit'), resumeCta = document.getElementById('resumeCta');
+const skillsState = { headIn: 0, ctaIn: 0 };
+const monUi = document.getElementById('monUi'), monBoot = document.getElementById('monBoot');
+const monBox = { w: 300, h: 200, s: 1, vw: 0, vh: 0 };
+const monPush = { v: 0 };   // 0 -> 1 on the switch to Experience: the camera eases 3% closer   // the window's size at the camera's resting place on the monitor
+
+// ---------- title card (split into letters) ----------
+const titleName = $('titleName');
+titleName.innerHTML = [...titleName.textContent].map(c => `<span>${c}</span>`).join('');
+const titleLetters = titleName.querySelectorAll('span');
+
+// ---------- camera ----------
+// cam.k: 0 = sign framed wide, 1 = close-up framing, 2 = full room
+const cam = { k: 0 };
+const drift = { x: 0, y: 0, z: 0 };
+let geo, lastS = 1, lastTx = 0, lastTy = 0;
+
+function measure() {
+  const vw = innerWidth, vh = innerHeight, ar = IMG_W / IMG_H;
+  const w = vw / vh > ar ? vw : vh * ar, h = w / ar;
+  const portrait = vw / vh < 1;
+  const fit = f => Math.max(1, Math.min(CLOSE.k * 0.8, (f * vw) / (SIGN.w * w)));
+  geo = {
+    vw, vh, w, h, aspect: Math.max(vw / vh, vh / vw),
+    frames: [
+      { s: fit(portrait ? 0.7 : 0.3), x: SIGN.x, y: SIGN.y + 0.02 },   // Scene 02
+      // Scene 03: close-up at its own resolution, but never wider than 84% of the screen
+      { s: Math.min(CLOSE.k * 1.2, (0.84 * vw) / (SIGN.w * w)), x: CLOSE.x, y: CLOSE.y },
+      { s: 1, x: portrait ? 0.42 : 0.51, y: 0.5 },                      // Scene 04 (phones frame the character)
+      // end of the walk video: the video does the move; the camera only leans in on the face at the very end
+      { s: 1.22, x: FACE.x, y: FACE.y },
+      // About me, full: the video frame drifts back a little as the wide shot takes over
+      { s: 1.1, x: FACE.x, y: FACE.y },
+    ],
+  };
+  room.style.width = w + 'px';
+  room.style.height = h + 'px';
+  geo.ww = Math.max(vw, vh * WIDE_AR); geo.wh = geo.ww / WIDE_AR; geo.portrait = portrait;
+  wideL.style.width = geo.ww + 'px'; wideL.style.height = geo.wh + 'px';
+  deskL.style.width = geo.ww + 'px'; deskL.style.height = geo.wh + 'px';
+  // bend the resume page into the glass: desk.webp is 1672 px wide, the matrix works in its pixels
+  gfPage.style.transform = `scale(${(geo.ww / 1672).toFixed(5)}) matrix3d(${GF_MATRIX})`;
+  // side layout: the copy sits right, over the blurred shoulder, clear of the reflected face
+  const side = !matchMedia('(max-width: 760px), (max-aspect-ratio: 1/1)').matches;
+  const about = $('about');
+  if (side) {
+    // the tightest framing (on the face) is the one the copy must clear
+    const s = 1.22 * 1.015, tx = Math.min(0, Math.max(vw - w * s, vw / 2 - FACE.x * w * s));
+    const faceRight = tx + FACE.right * w * s;
+    about.style.width = Math.max(200, Math.min(380, vw * 0.94 - faceRight - 48)) + 'px';
+  } else {
+    about.style.width = '';
+  }
+  sizeDust();
+  sizeMon();
+}
+function sizeMon() {
+  const vw = innerWidth, vh = innerHeight, stacked = !(vw / vh >= 1.45 && vw >= 760);
+  const Mf = deskFrame('monitor', geo.ww, geo.wh, vw, vh, stacked);
+  monBox.vw = vw; monBox.vh = vh;
+  const gw = (MON.x1 - MON.x0) * geo.ww * Mf.s, gh = (MON.y1 - MON.y0) * geo.wh * Mf.s;
+  // phones: the window stays clear of the scene dots on the right
+  monBox.w = Math.min(gw * 0.985, vw - (stacked ? 88 : 64)); monBox.h = gh * 0.985; monBox.s = Mf.s;
+  monUi.style.width = monBox.w.toFixed(1) + 'px'; monUi.style.height = monBox.h.toFixed(1) + 'px';
+  monUi.style.setProperty('--fs', Math.max(stacked ? 12.5 : 11.5, Math.min(19, monBox.w / 46)).toFixed(1) + 'px');
+}
+
+const lerp = (a, b, t) => a + (b - a) * t;
+function smooth(a, b, x) { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+function bump(c, r, x) { const d = Math.abs(x - c) / r; return d >= 1 ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * d); }
+
+// v = 1: only the name card is showing, so the block drops by the height of what is still hidden
+const aboutLift = { v: 1 };
+function placeAbout() {
+  const about = $('about'), role = about.querySelector('.role');
+  const cardBottom = role.offsetTop + role.offsetHeight, hidden = about.offsetHeight - cardBottom;
+  const bottomAnchored = matchMedia('(max-width: 760px), (max-aspect-ratio: 1/1)').matches;
+  // phones: the card sits where the full block ends. Side layout: the card drops into the lower
+  // third, under the reflected neon, then rises to the middle as the rest of the copy arrives.
+  const vh = innerHeight;
+  let drop;
+  if (bottomAnchored) {
+    // ...but stays clear of the "scroll" hint underneath
+    const top0 = vh - (0.09 * vh + 56) - about.offsetHeight;
+    const hintTop = vh - (0.09 * vh + 22) - hint.offsetHeight;
+    drop = Math.max(0, Math.min(hidden, hintTop - 14 - (top0 + cardBottom)));
+  } else {
+    drop = vh * 0.88 - (vh / 2 - about.offsetHeight / 2 + cardBottom);
+  }
+  const dy = drop * aboutLift.v;
+  about.style.transform = bottomAnchored ? `translateY(${dy.toFixed(1)}px)` : `translateY(calc(-50% + ${dy.toFixed(1)}px))`;
+}
+
+// the desk shot's camera framings: where in the picture the screen centre sits, and how far in.
+// The notes fill most of the screen; the frame sits left of centre with its words beside it (on
+// phones: high, words below). Never more than 2.6x the picture's own pixels, so it stays sharp enough.
+function deskFrame(which, ww, wh, vw, vh, stacked) {
+  const cap = 2.6 * 1672 / ww;
+  if (which === 'notes') {
+    const B = NOTES_BOX, bw = (B.x1 - B.x0) * ww, bh = (B.y1 - B.y0) * wh;
+    const sc = Math.min(cap, 0.8 * vw / bw, 0.62 * vh / bh);
+    // a little above the middle, clear of the hint at the bottom
+    return { x: (B.x0 + B.x1) / 2, y: (B.y0 + B.y1) / 2 + 0.07 * vh / (wh * sc), s: sc };
+  }
+  if (which === 'monitor') {
+    // the glass fills most of the screen. Phones are too narrow for all of it: the camera goes in close
+    // enough to read, and the sides of the glass run off the edges
+    const M = MON, bw = (M.x1 - M.x0) * ww, bh = (M.y1 - M.y0) * wh;
+    let sc = Math.min(cap, 0.84 * vw / bw, (stacked ? 0.6 : 0.66) * vh / bh);
+    if (stacked) sc = Math.max(1, Math.min(cap, Math.max(sc, 0.5 * vh / bh)));
+    // wide screens: a little above the middle, so the hint underneath falls on the monitor's chin
+    return { x: (M.x0 + M.x1) / 2, y: (M.y0 + M.y1) / 2 + (stacked ? 0.015 : 0.05) * vh / (wh * sc), s: sc };
+  }
+  const F = FRAME, bw = (F.x1 - F.x0) * ww, bh = (F.y1 - F.y0) * wh;
+  const sc = Math.min(cap, stacked ? Math.min(0.62 * vw / bw, 0.44 * vh / bh) : Math.min(0.6 * vh / bh, 0.3 * vw / bw));
+  const sx = stacked ? 0.5 : 0.36, sy = stacked ? 0.36 : 0.5;
+  return { x: (F.x0 + F.x1) / 2 + (0.5 - sx) * vw / (ww * sc), y: (F.y0 + F.y1) / 2 + (0.5 - sy) * vh / (wh * sc), s: sc };
+}
+
+// everything over the desk follows the picture: the heading above the monitor (it steps aside as
+// the camera heads for the notes), the writing on each note, the button over the frame and its words
+function placeDesk(X, Y, W, H, zn) {
+  const vw = innerWidth, vh = innerHeight, k = cam.k;
+  const wide = vw / vh >= 1.45 && vw >= 760;
+  skillsUI.classList.toggle('stacked', !wide);
+  // tablets keep the desktop's three project cards side by side; only phones get the one-per-row list
+  skillsUI.classList.toggle('tab', !wide && innerWidth >= 700);
+  skillsHead.style.opacity = (skillsState.headIn * (1 - smooth(0, 0.3, zn))).toFixed(3);
+  if (wide) {
+    skillsHead.style.left = (X + DESK.cx * W).toFixed(1) + 'px';
+    skillsHead.style.top = Math.max(18, Y + 0.03 * H).toFixed(1) + 'px';
+  } else {
+    skillsHead.style.left = skillsHead.style.top = '';
+  }
+  jotEls.forEach((j, i) => {
+    const n = NOTES[i];
+    const w = Math.min((n.x1 - n.x0) * W, (n.y1 - n.y0) * H) * (n.r ? 0.96 : 1);
+    const cx = X + (n.x0 + n.x1) / 2 * W, cy = Y + (n.y0 + n.y1) / 2 * H;
+    j.style.setProperty('--w', w.toFixed(1) + 'px');
+    j.style.transform = `translate(${(cx - w / 2).toFixed(1)}px, ${(cy - w / 2).toFixed(1)}px) rotate(${n.r}deg)`;
+  });
+  const fl = X + FRAME.x0 * W, ft = Y + FRAME.y0 * H, fw = (FRAME.x1 - FRAME.x0) * W, fh = (FRAME.y1 - FRAME.y0) * H;
+  frameHit.style.transform = `translate(${fl.toFixed(1)}px, ${ft.toFixed(1)}px)`;
+  frameHit.style.width = fw.toFixed(1) + 'px'; frameHit.style.height = fh.toFixed(1) + 'px';
+  // the frame can be clicked whenever the camera rests where it can be seen
+  frameHit.classList.toggle('on', k >= 4.98 && (k <= 5.03 || (k >= 6.97 && k <= 7.03)));
+  frameHit.classList.toggle('pulse', k >= 6.97 && k <= 7.03 && skillsState.ctaIn > 0.5);
+  if (k > 7) {
+    if (monBox.vw !== vw || monBox.vh !== vh) sizeMon();   // the screen changed size since it was measured
+    const px = X + (MON.x0 + MON.x1) / 2 * W - vw / 2, py = Y + (MON.y0 + MON.y1) / 2 * H - vh / 2;
+    const co = Math.cos(deskRoll), si = Math.sin(deskRoll);
+    const cx = vw / 2 + px * co - py * si, cy = vh / 2 + px * si + py * co;
+    const f = W / (geo.ww * monBox.s);
+    const tf = `translate(${cx.toFixed(1)}px, ${cy.toFixed(1)}px) rotate(${deskRoll.toFixed(5)}rad) scale(${f.toFixed(4)}) translate(-50%, -50%)`;
+    monUi.style.transform = tf; monBoot.style.transform = tf;
+  }
+  const c = skillsState.ctaIn;
+  resumeCta.style.opacity = c.toFixed(3);
+  resumeCta.style.visibility = c > 0.01 ? '' : 'hidden';
+  if (wide) {
+    resumeCta.style.left = (fl + fw + Math.max(36, vw * 0.045)).toFixed(1) + 'px';
+    resumeCta.style.top = (ft + fh * 0.3).toFixed(1) + 'px';   // on the dark wall, above the books
+    resumeCta.style.transform = 'translateY(-50%)';
+  } else {
+    resumeCta.style.left = '16px';
+    resumeCta.style.top = (ft + fh + 22).toFixed(1) + 'px';
+    resumeCta.style.transform = 'none';
+  }
+}
+
+// ---------- the room-wide camera (11 -> 12) ----------
+// rw.p runs 0 -> 1 (pull back from the monitor to the whole room) -> 2 (glide across to him on the bean bag)
+const rw = { p: 0 };
+const RW = { w: 1672, h: 941,
+  mon: { x: 449, y: 339, w: 294 },        // the monitor glass in room-wide.webp
+  man: { x: 1301, y: 395 },               // his eyes in room-wide.webp
+  bean: { x: 521, y: 283, k: 1.42 } };    // his eyes in beanbag.webp, and how much bigger he is there
+const rwL = document.getElementById('roomWide'), rwImg = rwL.querySelector('img');
+const beanImg = document.querySelector('#contact .bean');
+function rwKeys() {
+  const { vw, vh } = geo;
+  // 0: the monitor in the room picture sits exactly on the monitor on screen
+  const W = deskCam.W || vw, X = deskCam.X || 0, Y = deskCam.Y || 0, H = deskCam.H || vh;
+  const s0 = (MON.x1 - MON.x0) * W / RW.mon.w;
+  const k0 = { s: s0, cx: RW.mon.x + (vw / 2 - (X + (MON.x0 + MON.x1) / 2 * W)) / s0,
+                      cy: RW.mon.y + (vh / 2 - (Y + (MON.y0 + MON.y1) / 2 * H)) / s0 };
+  // 1: the whole room (on a tall phone screen it fills the height, and the camera pans across instead)
+  const s1 = Math.max(vw / RW.w, vh / RW.h);
+  const k1 = { s: s1, cx: RW.w / 2, cy: RW.h / 2 };
+  // 2: he lines up with where he sits in the bean bag picture, so the cross-fade lands on him
+  const b = beanImg.getBoundingClientRect(), cs = getComputedStyle(beanImg).objectPosition.split(' ');
+  const bs = Math.max(b.width / 1671, b.height / 941);
+  const ox = b.left + (b.width - 1671 * bs) * parseFloat(cs[0]) / 100;
+  const oy = b.top + (b.height - 941 * bs) * parseFloat(cs[1] || '50') / 100;
+  const s2 = bs * RW.bean.k;
+  const k2 = { s: s2, cx: RW.man.x + (vw / 2 - (ox + RW.bean.x * bs)) / s2, cy: RW.man.y + (vh / 2 - (oy + RW.bean.y * bs)) / s2 };
+  return [k0, k1, k2];
+}
+function rwRender() {
+  if (!(parseFloat(rwL.style.opacity) > 0)) return;
+  const K = rwKeys(), i = rw.p < 1 ? 0 : 1, t = Math.min(1, rw.p - i), a = K[i], b = K[i + 1];
+  const sc = Math.exp(lerp(Math.log(a.s), Math.log(b.s), t));
+  const cx = lerp(a.cx, b.cx, t), cy = lerp(a.cy, b.cy, t);
+  rwImg.style.transform = `translate3d(${(geo.vw / 2 - cx * sc).toFixed(2)}px, ${(geo.vh / 2 - cy * sc).toFixed(2)}px, 0) scale(${sc.toFixed(5)})`;
+}
+
+function render() {
+  const { vw, vh, w, h, frames, aspect } = geo;
+  // the scroll position (already smoothed) moves the timeline, which moves the camera
+  if (typeof scrubTick === 'function') scrubTick();
+  rwRender();
+  const k = cam.k;
+  const i = Math.min(frames.length - 2, Math.floor(k)), t0 = Math.min(1, k - i);
+  // during the walk video the lean-in on the face only starts once he is at the mirror
+  const t = i === 2 ? smooth(0.55, 1, t0) : t0;
+  const a = frames[i], b = frames[i + 1];
+
+  // a slight camera roll while moving: leans in on the push, out on the pull-back
+  const roll = reduced ? 0 : Math.sin(Math.PI * t) * [0.55, -0.45, 0, -0.18][i] * Math.PI / 180;
+  // mouse parallax: the camera leans gently toward the cursor (1.5% overscan gives it room)
+  par.x += (parT.x - par.x) * 0.045; par.y += (parT.y - par.y) * 0.045;
+  const s = Math.exp(lerp(Math.log(a.s), Math.log(b.s), t)) * (1 + drift.z) * (1 + 1.6 * Math.abs(roll) * aspect) * 1.015;
+  const fx_ = lerp(a.x, b.x, t) * w + drift.x + par.x * 14 / s, fy_ = lerp(a.y, b.y, t) * h + drift.y + par.y * 9 / s;
+  let tx = vw / 2 - fx_ * s, ty = vh / 2 - fy_ * s;
+  tx = Math.min(0, Math.max(vw - w * s, tx));
+  ty = Math.min(0, Math.max(vh - h * s, ty));
+  room.style.transform =
+    `translate3d(${vw / 2}px, ${vh / 2}px, 0) rotate(${roll}rad) translate3d(${tx - vw / 2}px, ${ty - vh / 2}px, 0) scale(${s})`;
+  lastS = s; lastTx = tx; lastTy = ty;
+
+  // image swaps follow the camera position (same framing forward and backward)
+  const close = k <= 1 ? smooth(0.12, 0.42, k) : 1 - smooth(1.3, 1.62, k);
+  let lit = smooth(1.44, 1.78, k);   // quick swap: the two photos never sit half-on-half for long
+  // the room's lamps stutter as they come on
+  if (!reduced && lit > 0.02 && lit < 0.5) lit *= Math.sin(k * 150) > -0.2 ? 1 : 0.35;
+  const rack = Math.max(bump(0.27, 0.17, k), bump(1.46, 0.17, k));
+  closeL.style.opacity = close.toFixed(3);
+  litL.style.opacity = lit.toFixed(3);
+  // the character stands nearer the camera than the wall: he slides a little against it
+  // as the camera travels and leans with the mouse, which gives the room real depth
+  charL.style.opacity = lit.toFixed(3);
+  if (!reduced) {
+    const camX = lerp(a.x, b.x, t), camY = lerp(a.y, b.y, t);
+    const lim = 0.0055 * w;
+    const dx = Math.max(-lim, Math.min(lim, -(camX - 0.51) * w * 0.016 - par.x * 0.0035 * w));
+    const dy = Math.max(-lim * 0.6, Math.min(lim * 0.6, -(camY - 0.5) * h * 0.012 - par.y * 0.002 * h));
+    charL.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0)`;
+  }
+  // flare and bloom: strongest in the dark, calmer once the room is lit, gone in the tight close-up
+  fxOuter.style.opacity = ((1 - 0.55 * lit) * (1 - 0.85 * close * (k <= 1.3 ? 1 : 0))).toFixed(3);
+  const bar = Math.max(1 - smooth(1.45, 1.95, k), k > 5 ? 0.75 * Math.sin(Math.PI * Math.min(1, k - Math.min(7, Math.floor(k)))) : 0);
+  bars.forEach(b => b.style.transform = `scaleY(${bar.toFixed(3)})`);
+
+  // grade: teal shadows while the neon rules, easing off as the warm room lights come on
+  grade.style.opacity = (0.6 - 0.42 * lit).toFixed(3);
+  // eyes adjusting: a brief warm overexposure as the lamps catch
+  exposure.style.opacity = (reduced ? 0 : bump(1.6, 0.24, k) * 0.5).toFixed(3);
+
+  // 04 -> 05: the video takes over from the still the instant the camera leaves Scene 04
+  // (its first frame is the same picture), and scroll scrubs it frame by frame
+  // focus pulls: the rack on the way into the sign, and the one that hides the lights-on swap.
+  // Blurred once on the screen-sized stage (cheap) instead of on the zoomed-in room layers, which
+  // at 2-3x zoom made the browser redraw a huge picture through the blur on every frame.
+  // 06 -> 07: the turn to the desk is quick, so it smears like a real whip of the camera
+  const pv = Math.min(1, Math.max(0, k - 4));
+  // 07 -> 08 -> 09: in to the notes, then a quick slide across the desk to the frame
+  const zn = Math.min(1, Math.max(0, k - 5)), zr = Math.min(1, Math.max(0, k - 6)), zm = Math.min(1, Math.max(0, k - 7));
+  // ...and at the end of each move the focus is pulled: soft for a moment, then sharp on what we came to see
+  const fb = reduced ? 0 : Math.max(rack * 1.4, bump(1.6, 0.2, k) * 2.6 * Math.min(s, 2), bump(0.5, 0.42, pv) * Math.min(14, vw / 110),
+    bump(0.5, 0.5, zn) * 1.4, bump(0.86, 0.13, zn) * 2.6, bump(0.5, 0.42, zr) * Math.min(7, vw / 220), bump(0.86, 0.13, zr) * 2.6,
+    bump(0.5, 0.42, zm) * Math.min(6, vw / 240), bump(0.86, 0.13, zm) * 2.2);
+  stage.style.filter = fb > 0.05 ? `blur(${fb.toFixed(2)}px)` : 'none';
+  const wp = Math.min(1, Math.max(0, k - 2));
+  walk.style.opacity = walkReady ? smooth(2, 2.025, k).toFixed(3) : '0';
+  if (k > 2) scrubWalk(wp);
+
+  // 05 -> 06: one continuous shot. The pull-back video starts on the same face framing the walk
+  // ends on, takes over in a few frames, and scroll scrubs it back to the wide shot.
+  const u = k - 3;
+  dip.style.opacity = '0';
+  if (u > 0.002) {
+    const { ww, wh } = geo;
+    // where the shot ends: the video fills the screen
+    const RS = 1.012 * (1 + drift.z);
+    const rx = geo.portrait ? 0.42 : 0.5;
+    let Xc = vw / 2 - rx * ww * RS - par.x * 10, Yc = vh / 2 - 0.5 * wh * RS - par.y * 6;
+    Xc = Math.min(0, Math.max(vw - ww * RS, Xc)); Yc = Math.min(0, Math.max(vh - wh * RS, Yc));
+    // where it starts: its first frame is the top-left PULL_CROP of the walk's last frame, so it is
+    // laid exactly over the room camera's current framing (same scale, offset and roll) on any screen,
+    // then eases out to full screen while the video itself pulls back
+    const Sm = lastS * w * PULL_CROP / ww;
+    const m = smooth(0, 0.5, u);
+    const S2 = Math.exp(lerp(Math.log(Sm), Math.log(RS), m));
+    // the desk shot rests with the monitor in the middle; it hangs right of the wide shot, and
+    // the pan carries both left together by exactly the distance between their resting places
+    let Xs = vw / 2 - DESK.cx * ww * RS - par.x * 10;
+    Xs = Math.min(0, Math.max(vw - ww * RS, Xs));
+    const D = DESK.seam * ww * RS + Xc - Xs;
+    let X = lerp(lastTx, Xc, m) - pv * D;
+    const Y = lerp(lastTy, Yc, m), r2 = roll * (1 - m);
+    if (pv > 0) {
+      let XS = Xs + (1 - pv) * D, YS = Yc, SS = RS;
+      if (k > 5) {
+        // from the resting desk shot the camera moves in on the notes, then across to the frame
+        // (pulling back a little on the way, like a real camera crossing a room)
+        const st = !(vw / vh >= 1.45 && vw >= 760);
+        const A0 = { x: (vw / 2 - XS) / (ww * RS), y: (vh / 2 - Yc) / (wh * RS), s: RS };
+        const N = deskFrame('notes', ww, wh, vw, vh, st), F = deskFrame('frame', ww, wh, vw, vh, st);
+        const [A, B, e] = k <= 6 ? [A0, N, zn] : k <= 7 ? [N, F, zr] : [F, deskFrame('monitor', ww, wh, vw, vh, st), zm];
+        const mv = Math.sin(Math.PI * e);      // 0 at either end, 1 mid-move
+        // a small push past the mark and back as it lands
+        SS = Math.exp(lerp(Math.log(A.s), Math.log(B.s), e)) * (1 + 0.03 * monPush.v) * (k > 7 ? 1 - 0.3 * mv : k > 6 ? 1 - 0.42 * mv : 1) * (1 + 0.014 * bump(0.9, 0.1, e)) * (1 + drift.z * 0.6);
+        // the path curves instead of running straight: in to the notes it swings wide and comes round;
+        // across the desk it dips low past the chair, like a camera on a dolly
+        // ...and up to the monitor it rises like a crane
+        const ox = k <= 6 ? -0.05 * vw * mv : k > 7 ? 0.03 * vw * mv : 0, oy = k <= 6 ? 0.03 * vh * mv : k > 7 ? 0.05 * vh * mv : 0.07 * vh * mv;
+        // handheld: a little wobble while moving, a breath of it at rest
+        const tt = performance.now() / 1000, amp = reduced ? 0 : 0.8 + 4 * mv;
+        XS = vw / 2 - lerp(A.x, B.x, e) * ww * SS + ox + wob(tt, 1.1, 2.3, 4.1) * amp;
+        YS = vh / 2 - lerp(A.y, B.y, e) * wh * SS + oy + wob(tt, 0.9, 1.9, 3.7) * amp * 0.7;
+        // the camera leans into each move and straightens as it arrives
+        deskRoll = reduced ? 0 : (k <= 6 ? 0.7 : k <= 7 ? -1.1 : 0.9) * mv * (1 - 0.35 * e) * Math.PI / 180;
+        SS *= 1 + 1.6 * Math.abs(deskRoll) * Math.max(vw / vh, vh / vw);   // cover the corners the lean uncovers
+        XS = Math.min(0, Math.max(vw - ww * SS, XS));
+        YS = Math.min(0, Math.max(vh - wh * SS, YS));
+        deskCam.mv = mv;
+      } else {
+        deskRoll = 0; deskCam.mv = 0;
+      }
+      // a layer kept for transforms is drawn once at its first size; let it redraw sharp when zoomed in
+      deskL.style.willChange = k > 5.001 ? 'auto' : '';
+      deskL.style.transform = deskRoll
+        ? `translate3d(${vw / 2}px, ${vh / 2}px, 0) rotate(${deskRoll.toFixed(5)}rad) translate3d(${(XS - vw / 2).toFixed(2)}px, ${(YS - vh / 2).toFixed(2)}px, 0) scale(${SS.toFixed(5)})`
+        : `translate3d(${XS.toFixed(2)}px, ${YS.toFixed(2)}px, 0) scale(${SS.toFixed(5)})`;
+      deskCam.on = true; deskCam.X = XS; deskCam.Y = YS; deskCam.W = ww * SS; deskCam.H = wh * SS;
+      deskLight(XS, YS, ww * SS, wh * SS, k, zn, zr, zm);
+      // the mug is off screen in the notes close-up; skip the drawing there
+      const mugX = XS + 0.8134 * ww * SS;
+      if (mugX > -0.1 * vw && mugX < 1.1 * vw) drawSteam(k);
+      deskL.style.visibility = 'visible';
+      // the soft seam is only for the move: it narrows away as the camera settles, so the edge of the
+      // wide shot (the bookshelf) never shows through the left of the resting desk shot
+      const fe = 14 * (1 - smooth(0.6, 1, pv));
+      const mask = fe > 0.05 ? `linear-gradient(90deg, transparent 0, #000 ${fe.toFixed(2)}%)` : 'none';
+      deskL.style.webkitMaskImage = deskL.style.maskImage = mask;
+      placeDesk(XS, YS, ww * SS, wh * SS, zn);
+      skillsUI.style.visibility = 'visible';
+    } else {
+      deskL.style.visibility = 'hidden';
+      skillsUI.style.visibility = 'hidden';
+      deskCam.on = false;
+    }
+    wideL.style.transform =
+      `translate3d(${vw / 2}px, ${vh / 2}px, 0) rotate(${r2}rad) translate3d(${(X - vw / 2).toFixed(2)}px, ${(Y - vh / 2).toFixed(2)}px, 0) scale(${S2.toFixed(5)})`;
+    // the room underneath stays until the video layer covers the whole screen (no gap at any edge)
+    pullCovers = X <= 1 && Y <= 1 && X + ww * S2 >= vw - 1 && Y + wh * S2 >= vh - 1 && Math.abs(r2) < 0.0005;
+    wideL.style.filter = 'none';
+    if (pullReady) {
+      scrubPull(u);
+      // the clip is only 1280x720 and turns soft stretched to full screen; its last frame is the same
+      // picture as the full-size still underneath (same framing, checked pixel for pixel), so as the
+      // camera settles the video dissolves into the sharp still and the scene rests on that
+      pull.style.opacity = (1 - smooth(0.86, 0.98, u)).toFixed(3);
+      wideL.style.opacity = smooth(0.002, 0.03, u).toFixed(3);   // same picture, so the dissolve is invisible
+    } else {
+      // video not loaded yet: fall back to the still, faded in over the face
+      pull.style.opacity = '0';
+      wideL.style.opacity = smooth(0.1, 0.5, u).toFixed(3);
+    }
+    wideL.style.visibility = 'visible';
+  } else {
+    wideL.style.visibility = 'hidden';
+    deskL.style.visibility = 'hidden';
+    skillsUI.style.visibility = 'hidden';
+    deskCam.on = false;
+  }
+  room.style.visibility = (u > 0.03 && pullReady && pullCovers) || u > 0.5 ? 'hidden' : 'visible';
+
+  placeAbout();
+
+  // camera speed (scene units per second), used by the sound
+  const now = performance.now(), dt = Math.max(1, now - lastT) / 1000;
+  const speed = Math.abs(k - lastK) / dt;
+  lastT = now; lastK = k;
+  const neon = +getComputedStyle(signL).opacity;
+  sound.update(neon, speed, lit, tl.time() > 0.3);
+
+  drawDust(k, lit, neon);
+}
+let lastK = 0, lastT = performance.now(), forwardMove = true, deskRoll = 0;
+
+// coffee steam: three ribbons rise from the mug. Each one's waves travel upward, it widens and fades as it
+// climbs, and it thickens and thins on its own slow cycle, so the steam never repeats the same shape.
+// While the camera moves, the steam trails behind it a little.
+const steamC = $('steam'), stx = steamC.getContext('2d');
+const STRANDS = [
+  { ph: 0.0, sp: 1.0, a: 1.0, off: -7 },
+  { ph: 2.2, sp: 0.82, a: 0.8, off: 9 },
+  { ph: 4.1, sp: 1.17, a: 0.55, off: 1 },
+];
+function drawSteam(k) {
+  const W = steamC.width, H = steamC.height, t = reduced ? 4 : performance.now() / 1000;
+  stx.clearRect(0, 0, W, H);
+  stx.lineCap = 'butt'; stx.lineJoin = 'round';
+  const cx = W * 0.5, y0 = H * 0.965, L = H * 0.93, N = 46;
+  const lean = deskCam.mv * (k > 7 ? 0.8 : k > 6 ? -1 : 0.6);
+  for (const st of STRANDS) {
+    const life = 0.68 + 0.32 * Math.sin(t * 0.45 * st.sp + st.ph);
+    if (life < 0.04) continue;
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const p = i / N;
+      pts.push([
+        cx + st.off * (0.4 + p) + Math.sin(p * 7.5 - t * 1.6 * st.sp + st.ph) * W * (0.03 + 0.15 * p)
+          + Math.sin(p * 3.1 - t * 0.7 + st.ph * 1.7) * W * 0.08 * p + lean * p * p * W * 0.35,
+        y0 - p * L, p,
+      ]);
+    }
+    // a wide faint pass for the haze, then the brighter core
+    for (const [wMul, aMul] of [[2.4, 0.3], [1, 1]]) {
+      for (let i = 1; i <= N; i++) {
+        const [x0, y0_, ] = pts[i - 1], [x1, y1, p] = pts[i];
+        const a = 0.9 * st.a * life * aMul * smooth(0, 0.08, p) * Math.pow(1 - p, 1.1);
+        if (a < 0.004) continue;
+        stx.strokeStyle = `rgba(255, 238, 222, ${a.toFixed(3)})`;
+        stx.lineWidth = W * (0.03 + 0.1 * p) * wMul;
+        stx.beginPath(); stx.moveTo(x0, y0_); stx.lineTo(x1, y1); stx.stroke();
+      }
+    }
+  }
+}
+
+// the lamp: its pool of light breathes, its bulb streaks across the lens (more while the camera moves),
+// and in the close-ups the foreground goes soft
+function deskLight(X, Y, W, H, k, zn, zr, zm) {
+  const vw = innerWidth, vh = innerHeight, tt = performance.now() / 1000;
+  const breath = reduced ? 0.85 : 0.82 + 0.06 * Math.sin(tt * 1.7) + 0.04 * Math.sin(tt * 5.3 + 0.7) + (Math.sin(tt * 23) > 0.985 ? -0.12 : 0);
+  lampGlow.style.opacity = breath.toFixed(3);
+  const bx = X + BULB.x * W, by = Y + BULB.y * H;
+  // fades out as the bulb nears an edge of the screen
+  const inX = smooth(-0.1 * vw, 0.08 * vw, bx) * (1 - smooth(0.92 * vw, 1.1 * vw, bx));
+  const inY = smooth(-0.1 * vh, 0.06 * vh, by) * (1 - smooth(0.94 * vh, 1.1 * vh, by));
+  const rest = k >= 4.95 ? smooth(4.95, 5, k) : 0;
+  const amt = reduced ? 0 : inX * inY * rest * (0.22 + 0.55 * deskCam.mv) * (0.9 + 0.1 * breath);
+  lampFlare.style.opacity = amt.toFixed(3);
+  lampFlare.style.transform = `translate(${bx.toFixed(1)}px, ${by.toFixed(1)}px) scaleX(${(1 + 0.5 * deskCam.mv).toFixed(3)})`;
+  // (none at the monitor: the soft band would fall on the screen's lower lines)
+  const dof = Math.max(smooth(0.55, 1, zn) * (1 - smooth(0, 0.25, zr)), smooth(0.6, 1, zr) * (1 - smooth(0, 0.3, zm)));
+  dofL.style.opacity = (reduced ? 0 : dof).toFixed(3);
+  dofL.style.visibility = !reduced && dof > 0.01 ? '' : 'hidden';   // the blur costs nothing when off
+}
+const par = { x: 0, y: 0 }, parT = { x: 0, y: 0 };
+addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || reduced) return;
+  parT.x = (e.clientX / innerWidth - 0.5) * 2;
+  parT.y = (e.clientY / innerHeight - 0.5) * 2;
+});
+document.documentElement.addEventListener('mouseleave', () => { parT.x = parT.y = 0; });
+
+// ---------- sound (synthesised live, off until the visitor turns it on) ----------
+const sound = (() => {
+  let ctx = null, on = false, nodes = null, prevNeon = 0, prevLit = 0, lastClick = 0;
+  const btn = $('sound'), label = $('soundLabel');
+
+  function build() {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const sr = ctx.sampleRate, len = sr * 2;
+    // white noise, used only for the short zaps and lamp clicks
+    const white = ctx.createBuffer(1, len, sr), wd = white.getChannelData(0);
+    for (let n = 0; n < len; n++) wd[n] = Math.random() * 2 - 1;
+    const filt = (type, f, q = 0.7) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
+    const gain = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
+
+    const master = gain(0); master.connect(ctx.destination);
+
+    // soft hall reverb (generated impulse, no files)
+    const rev = ctx.createConvolver(), irLen = Math.floor(sr * 3.8);
+    const ir = ctx.createBuffer(2, irLen, sr);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      for (let n = 0; n < irLen; n++) d[n] = (Math.random() * 2 - 1) * Math.pow(1 - n / irLen, 3.2);
+    }
+    rev.buffer = ir;
+    const wet = gain(0.75); rev.connect(wet).connect(master);
+
+    // ---- synthwave bed: Dm9 - Bbmaj7 - Fmaj7 - Cadd9 at 84 bpm ----
+    // it builds with the story: a filtered pad in the dark, the arp when the neon strikes,
+    // pulsing bass and a soft kick (with sidechain pump) once the room lights come on
+    const musicG = gain(0), comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -20; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.25;
+    musicG.connect(comp).connect(master);
+    const padLP = filt('lowpass', 700, 0.6), pump = gain(1), padG = gain(0);
+    padLP.connect(pump).connect(padG); padG.connect(musicG); padG.connect(rev);
+    const lfo = ctx.createOscillator(), lfoG = gain(220);
+    lfo.frequency.value = 0.07; lfo.connect(lfoG).connect(padLP.frequency); lfo.start();
+    // arp: square through a lowpass into a dotted-eighth echo
+    const arpLP = filt('lowpass', 1800, 2), arpG = gain(0);
+    const echo = ctx.createDelay(1), fb = gain(0.38), echoLP = filt('lowpass', 2400);
+    echo.delayTime.value = (60 / 84) * 0.75;
+    arpLP.connect(arpG); arpG.connect(musicG); arpG.connect(echo);
+    echo.connect(echoLP).connect(fb).connect(echo); echoLP.connect(musicG); echoLP.connect(rev);
+    const bassLP = filt('lowpass', 420, 4), bassG = gain(0);
+    bassLP.connect(bassG).connect(musicG);
+    const kickG = gain(0); kickG.connect(musicG);
+    nodes = { musicG, padLP, pump, padG, arpLP, arpG, bassLP, bassG, kickG };
+
+    // neon transformer hum, kept soft and low
+    const humG = gain(0), humLP = filt('lowpass', 380);
+    humLP.connect(humG).connect(master);
+    [[100, 'triangle', 0.6], [150, 'sine', 0.3]].forEach(([f, type, v]) => {
+      const o = ctx.createOscillator(); o.type = type; o.frequency.value = f;
+      o.connect(gain(v)).connect(humLP); o.start();
+    });
+    Object.assign(nodes, { master, humG, white, rev });
+    setInterval(schedule, 25);
+  }
+
+  // ---- synthwave sequencer (look-ahead scheduling on the audio clock) ----
+  const BPM = 84, SIX = 60 / BPM / 4;      // one sixteenth
+  const mf = m => 440 * Math.pow(2, (m - 69) / 12);
+  const BARS = [
+    { bass: 38, pad: [50, 53, 57, 60, 64], arp: [62, 65, 69, 72] },   // Dm9
+    { bass: 34, pad: [46, 50, 53, 57],     arp: [58, 62, 65, 69] },   // Bbmaj7
+    { bass: 41, pad: [53, 57, 60, 64],     arp: [65, 69, 72, 76] },   // Fmaj7
+    { bass: 36, pad: [48, 52, 55, 62],     arp: [60, 64, 67, 74] },   // Cadd9
+  ];
+  const ARP = [0, 1, 2, 3, 1, 2, 3, 2];
+  let playing = false, nextT = 0, step = 0, lvl = { lit: 0, neon: 0 };
+  function padChord(bar, t) {
+    const len = SIX * 16;
+    bar.pad.forEach(m => [-7, 7].forEach(cents => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = mf(m); o.detune.value = cents;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.016, t + 0.7);
+      g.gain.setValueAtTime(0.016, t + len - 0.1);
+      g.gain.linearRampToValueAtTime(0.0001, t + len + 0.9);
+      o.connect(g).connect(nodes.padLP); o.start(t); o.stop(t + len + 1);
+    }));
+  }
+  function arpNote(m, t) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'square'; o.frequency.value = mf(m);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.03, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + SIX * 1.6);
+    o.connect(g).connect(nodes.arpLP); o.start(t); o.stop(t + SIX * 1.8);
+  }
+  function bassNote(m, t) {
+    const len = SIX * 1.7;
+    const o = ctx.createOscillator(), sub = ctx.createOscillator(), g = ctx.createGain(), sg = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = mf(m); sub.type = 'sine'; sub.frequency.value = mf(m);
+    [g, sg].forEach((x, n) => {
+      x.gain.setValueAtTime(0.0001, t);
+      x.gain.exponentialRampToValueAtTime(n ? 0.12 : 0.08, t + 0.008);
+      x.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    });
+    o.connect(g).connect(nodes.bassLP); sub.connect(sg).connect(nodes.bassG);
+    o.start(t); sub.start(t); o.stop(t + len + 0.02); sub.stop(t + len + 0.02);
+  }
+  function kick(t) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+    o.connect(g).connect(nodes.kickG); o.start(t); o.stop(t + 0.4);
+    // sidechain pump: the pad ducks under each kick, the classic synthwave breath
+    const depth = 0.45 * lvl.lit;
+    nodes.pump.gain.setValueAtTime(1 - depth, t + 0.01);
+    nodes.pump.gain.linearRampToValueAtTime(1, t + SIX * 3.2);
+  }
+  function schedule() {
+    if (!ctx || !on || !playing) return;
+    if (nextT < ctx.currentTime) nextT = ctx.currentTime + 0.05;   // fell behind (tab was hidden)
+    while (nextT < ctx.currentTime + 0.12) {
+      const s16 = step % 16, bar = BARS[Math.floor(step / 16) % BARS.length];
+      if (s16 === 0) padChord(bar, nextT);
+      if (lvl.neon > 0.05) arpNote(bar.arp[ARP[step % 8]] + (Math.floor(step / 8) % 2 && lvl.lit > 0.5 ? 12 : 0), nextT);
+      if (s16 % 2 === 0) bassNote(bar.bass, nextT);
+      if (s16 % 8 === 0) kick(nextT);
+      nextT += SIX; step++;
+    }
+  }
+
+  // glassy shimmer when the mirror catches the light: a soft D major 9 sparkle into the reverb
+  function shimmer() {
+    if (!on) return;
+    const t = ctx.currentTime;
+    [1174.66, 1760, 2637.02, 2959.96, 3520].forEach((f, n) => {
+      const at = t + n * 0.08;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.028 - n * 0.003, at + 0.025);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 2.4);
+      o.connect(g); g.connect(nodes.master); g.connect(nodes.rev);
+      o.start(at); o.stop(at + 2.5);
+    });
+  }
+
+  // ---- title card: cinematic text sounds (no music while the name is on screen) ----
+  const send = (node, dry = 1, wet = 0.6) => {
+    const d = ctx.createGain(); d.gain.value = dry; node.connect(d).connect(nodes.master);
+    const w = ctx.createGain(); w.gain.value = wet; node.connect(w).connect(nodes.rev);
+  };
+  const env = (g, at, peak, attack, decay) => {
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(peak, at + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + attack + decay);
+  };
+  const noise = (at, dur) => { const n = ctx.createBufferSource(); n.buffer = nodes.white; n.loop = true; n.start(at, Math.random()); n.stop(at + dur); return n; };
+  // airy swell as "A ROOM CALLED" spreads out
+  function rise() {
+    const t = ctx.currentTime, d = 1.5;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(220, t); bp.frequency.exponentialRampToValueAtTime(2600, t + d);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.11, t + d * 0.9); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.25);
+    noise(t, d + 0.3).connect(bp).connect(g); send(g, 0.8, 0.7);
+    const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(41, t); o.frequency.exponentialRampToValueAtTime(58, t + d);
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.16, t + d * 0.9); og.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.2);
+    o.connect(og).connect(nodes.master); o.start(t); o.stop(t + d + 0.3);
+  }
+  // each letter: a soft breathy whoosh-tick with a faint glassy ping, climbing as the name builds
+  const PING = [1174.66, 1318.51, 1479.98, 1760, 1975.53, 2349.32];
+  function letter(i) {
+    const t = ctx.currentTime;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2.2;
+    bp.frequency.setValueAtTime(2200 + i * 260, t); bp.frequency.exponentialRampToValueAtTime(5200 + i * 200, t + 0.09);
+    const g = ctx.createGain(); env(g, t, 0.07, 0.012, 0.11);
+    noise(t, 0.16).connect(bp).connect(g); send(g, 1, 0.5);
+    const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine'; o.frequency.value = PING[i % PING.length];
+    env(og, t, 0.012, 0.01, 0.9); o.connect(og); send(og, 0.6, 1);
+    o.start(t); o.stop(t + 1);
+  }
+  // the name lands: a deep cinematic hit with a long tail
+  function hit() {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(115, t); o.frequency.exponentialRampToValueAtTime(36, t + 0.6);
+    env(og, t, 0.55, 0.008, 2.6); o.connect(og); send(og, 1, 0.35); o.start(t); o.stop(t + 2.7);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 220;
+    const ng = ctx.createGain(); env(ng, t, 0.5, 0.004, 0.35);
+    noise(t, 0.4).connect(lp).connect(ng); send(ng, 1, 0.5);
+    // a low D underneath, so the hit rings rather than thuds
+    const d = ctx.createOscillator(), dg = ctx.createGain(); d.type = 'triangle'; d.frequency.value = 73.42;
+    env(dg, t, 0.07, 0.03, 3.2); d.connect(dg); send(dg, 0.8, 0.8); d.start(t); d.stop(t + 3.3);
+  }
+  // the underline draws: a thin metallic shing
+  function shing() {
+    const t = ctx.currentTime;
+    [2349.32, 3520].forEach((f, n) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine';
+      o.frequency.setValueAtTime(f * 0.94, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.5);
+      env(g, t + n * 0.04, 0.014, 0.05, 1.6); o.connect(g); send(g, 0.7, 1);
+      o.start(t); o.stop(t + 1.8);
+    });
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 6000;
+    const ng = ctx.createGain(); env(ng, t, 0.03, 0.08, 0.5);
+    noise(t, 0.7).connect(hp).connect(ng); send(ng, 0.6, 0.8);
+  }
+  // the cut between the face and the wide shot: a low whoosh falling into the dark, a soft swell out
+  function whoosh() {
+    if (!on || !ctx) return;
+    const t = ctx.currentTime, d = 1.1;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
+    bp.frequency.setValueAtTime(2600, t); bp.frequency.exponentialRampToValueAtTime(260, t + d);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + d * 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    noise(t, d + 0.1).connect(bp).connect(g); send(g, 0.9, 0.7);
+    const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(42, t + d);
+    env(og, t + 0.2, 0.14, 0.35, 1.4); o.connect(og); send(og, 1, 0.4); o.start(t); o.stop(t + 2.1);
+  }
+  function title(kind, i) {
+    if (!on || !ctx) return;
+    ({ rise, letter, hit, shing })[kind](i);
+  }
+
+  // ---- entry gate: the door ----
+  // 'latch': the handle going down and the bolt clearing the strike plate; 'creak': an old hinge,
+  // stick-slip friction ringing through the wood; 'room': the hush of the lit room as the door opens
+  function door(kind, dur = 1.8) {
+    if (!on || !ctx) return;
+    const t = ctx.currentTime;
+    if (kind === 'latch') {
+      [[0, 0.16, 2600], [0.11, 0.24, 1900]].forEach(([at, lvl, f]) => {
+        const s = t + at;
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 3;
+        const g = ctx.createGain(); env(g, s, lvl, 0.001, 0.06);
+        noise(s, 0.1).connect(bp).connect(g); send(g, 1, 0.25);
+        const o = ctx.createOscillator(), og = ctx.createGain(); o.frequency.value = f * 1.37;
+        env(og, s, lvl * 0.25, 0.001, 0.09); o.connect(og); send(og, 1, 0.2); o.start(s); o.stop(s + 0.12);
+        const th = ctx.createOscillator(), tg = ctx.createGain();
+        th.frequency.setValueAtTime(140, s); th.frequency.exponentialRampToValueAtTime(70, s + 0.07);
+        env(tg, s, lvl * 0.9, 0.002, 0.08); th.connect(tg).connect(nodes.master); th.start(s); th.stop(s + 0.12);
+      });
+      return;
+    }
+    if (kind === 'creak') {
+      const o = ctx.createOscillator(); o.type = 'sawtooth';
+      const steps = 14, g = ctx.createGain();
+      o.frequency.setValueAtTime(26, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.11, t + 0.12);
+      for (let i = 1; i <= steps; i++) {
+        o.frequency.linearRampToValueAtTime(22 + Math.random() * 36 + (i < 5 ? i * 4 : 0), t + dur * i / steps);
+        if (i < steps) g.gain.linearRampToValueAtTime(0.05 + Math.random() * 0.07, t + 0.12 + (dur - 0.45) * i / steps);
+      }
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      [[620, 10, 1], [1380, 8, 0.6], [2900, 6, 0.25]].forEach(([f, q, lvl]) => {
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+        const bg = ctx.createGain(); bg.gain.value = lvl * 12;
+        o.connect(bp).connect(bg).connect(g);
+      });
+      send(g, 1, 0.35); o.start(t); o.stop(t + dur + 0.05);
+      return;
+    }
+    // 'room'
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(2400, t + 1.6);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + 1.4); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.2);
+    noise(t, 3.3).connect(lp).connect(g); send(g, 0.6, 0.9);
+  }
+
+  // short electrical tick (neon strike, lamp switch)
+  function click(level) {
+    const t = ctx.currentTime;
+    const s = ctx.createBufferSource(); s.buffer = nodes.white;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1500;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(level, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    s.connect(hp).connect(g).connect(nodes.master); s.start(t, Math.random()); s.stop(t + 0.08);
+    const o = ctx.createOscillator(), og = ctx.createGain(); o.frequency.value = 90;
+    og.gain.setValueAtTime(level * 0.8, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(og).connect(nodes.master); o.start(t); o.stop(t + 0.1);
+  }
+
+  // neon tube striking: a buzzy electrical "tzzt" plus arc crackle; quieter "pop" when it drops out
+  function zap(level) {
+    if (!on) return;
+    const t = ctx.currentTime;
+    const strike = level > 0.3;
+    const len = strike ? 0.07 + level * 0.09 : 0.04;
+    const peak = strike ? 0.22 + level * 0.18 : 0.08;
+
+    // buzz: mains-frequency rasp through a resonant band
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900 + Math.random() * 500; bp.Q.value = 1.6;
+    const bg = ctx.createGain();
+    bg.gain.setValueAtTime(0.0001, t);
+    bg.gain.exponentialRampToValueAtTime(peak, t + 0.004);
+    bg.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    bp.connect(bg).connect(nodes.master);
+    [[100, 'sawtooth'], [50, 'square']].forEach(([f, type]) => {
+      const o = ctx.createOscillator(); o.type = type; o.frequency.value = f * (0.98 + Math.random() * 0.04);
+      o.connect(bp); o.start(t); o.stop(t + len + 0.02);
+    });
+
+    // crackle: a few tiny random arcs
+    const arcs = strike ? 3 + Math.floor(Math.random() * 3) : 1;
+    for (let n = 0; n < arcs; n++) {
+      const at = t + Math.random() * len * 0.8;
+      const s = ctx.createBufferSource(); s.buffer = nodes.white;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500 + Math.random() * 2500;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(peak * (0.5 + Math.random() * 0.6), at);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.012 + Math.random() * 0.02);
+      s.connect(hp).connect(g).connect(nodes.master); s.start(at, Math.random()); s.stop(at + 0.04);
+    }
+  }
+
+  function set(v) {
+    if (!ctx) build();
+    on = v;
+    if (on) ctx.resume();
+    nodes.master.gain.setTargetAtTime(on ? 0.9 : 0, ctx.currentTime, 0.25);
+    btn.setAttribute('aria-pressed', on);
+    label.textContent = on ? 'Sound on' : 'Sound off';
+  }
+  btn.addEventListener('click', () => {
+    set(!on);
+    // turned on later while the title is showing: play the name again, this time with its sound
+    if (on && typeof replayTitle === 'function') replayTitle();
+  });
+
+  return {
+    zap, shimmer, title, whoosh, door,
+    lamp: level => { if (on && ctx) click(level); },   // a soft tap: a note pressed onto the wall
+    enable: () => set(true),   // from the entry gate (a click, so the browser allows audio)
+    update(neon, speed, lit, music) {
+      if (!on) { prevNeon = neon; prevLit = lit; return; }
+      const t = ctx.currentTime, now = performance.now();
+      nodes.humG.gain.setTargetAtTime(0.03 * neon * (1 - 0.6 * lit), t, 0.006);
+      // no music under the title card: the track starts on the first bar once the visitor scrolls
+      if (music && !playing) { playing = true; step = 0; nextT = t + 0.08; }
+      if (!music && playing && nodes.musicG.gain.value < 0.01) playing = false;
+      lvl.lit = lit; lvl.neon = neon;
+      nodes.musicG.gain.setTargetAtTime(music ? 1.15 : 0, t, music ? 0.8 : 0.35);
+      // layers build with the story; moving the camera opens the filters a little
+      const mv = Math.min(1, speed * 1.4);
+      nodes.padG.gain.setTargetAtTime(0.7 + 0.3 * neon, t, 0.6);
+      nodes.padLP.frequency.setTargetAtTime(520 + neon * 500 + lit * 700 + mv * 900, t, 0.25);
+      nodes.arpG.gain.setTargetAtTime(neon * (0.55 + 0.45 * lit), t, 0.5);
+      nodes.arpLP.frequency.setTargetAtTime(1100 + lit * 1300 + mv * 1500, t, 0.25);
+      nodes.bassG.gain.setTargetAtTime(0.25 + 0.75 * lit, t, 0.5);
+      nodes.bassLP.frequency.setTargetAtTime(240 + lit * 420 + mv * 300, t, 0.3);
+      nodes.kickG.gain.setTargetAtTime(lit * 0.45, t, 0.5);   // a soft thump under the bass, never on top
+      if (now - lastClick > 55) {
+        if (prevLit < 0.08 && lit >= 0.08) { click(0.3); lastClick = now; }    // lamps catch
+      }
+      prevNeon = neon; prevLit = lit;
+    },
+  };
+})();
+
+// ---------- dust ----------
+// at the desk: motes hang in the air between the lens and the wall. When the camera moves or zooms they
+// slide past faster than the wall does (they are nearer), which sells the depth
+function drawDeskDust(k) {
+  const vw = innerWidth, vh = innerHeight, c = deskCam;
+  if (dustCam) {
+    const zoom = c.W / dustCam.W, dx = c.X - dustCam.X * zoom, dy = c.Y - dustCam.Y * zoom;
+    for (const m of motes) {
+      const near = 1 + m.z * 0.6;
+      // follow the wall's move, a little more for the nearer motes
+      let px = (m.x * vw) * zoom + dx, py = (m.y * vh) * zoom + dy;
+      px = m.x * vw + (px - m.x * vw) * near; py = m.y * vh + (py - m.y * vh) * near;
+      m.x = px / vw; m.y = py / vh;
+      if (m.x < -0.1 || m.x > 1.1 || m.y < -0.1 || m.y > 1.1) { m.x = Math.random(); m.y = Math.random(); }
+    }
+  }
+  dustCam = { X: c.X, Y: c.Y, W: c.W };
+  const amount = smooth(4.7, 5, k);
+  const bx = c.X + BULB.x * c.W, by = c.Y + (BULB.y + 0.2) * c.H, reach = 0.32 * c.W;
+  const now = performance.now() / 1000;
+  for (const m of motes) {
+    m.x += m.vx; m.y += m.vy;
+    if (m.y < -0.05) { m.y = 1.05; m.x = Math.random(); }
+    if (m.x < -0.05) m.x = 1.05; else if (m.x > 1.05) m.x = -0.05;
+    const px = m.x * vw, py = m.y * vh;
+    const d = Math.hypot(px - bx, (py - by) * 1.2) / reach;
+    const lightHere = Math.max(0.22, Math.exp(-d * d));
+    const tw = 0.6 + 0.4 * Math.sin(now * 1.3 + m.ph);
+    const alpha = amount * lightHere * tw * 0.55 * m.z;
+    if (alpha < 0.01) continue;
+    const r = (0.6 + m.z * 1.8) * dpr * (1 + c.mv * m.z * 0.6);
+    dc.fillStyle = `rgba(255, 200, 140, ${alpha.toFixed(3)})`;
+    dc.beginPath(); dc.arc(px * dpr, py * dpr, r, 0, 6.283); dc.fill();
+  }
+}
+const dust = $('dust'), dc = dust.getContext('2d');
+let motes = [], dpr = 1;
+function sizeDust() {
+  dpr = Math.min(2, devicePixelRatio || 1);
+  dust.width = innerWidth * dpr; dust.height = innerHeight * dpr;
+  if (!motes.length) {
+    for (let n = 0; n < 70; n++) motes.push({
+      x: Math.random(), y: Math.random(), z: 0.3 + Math.random() * 0.7,
+      vx: (Math.random() - 0.5) * 0.00012, vy: -0.00004 - Math.random() * 0.0001,
+      ph: Math.random() * 6.28,
+    });
+  }
+}
+let dustCam = null;
+function drawDust(k, lit, neon) {
+  const W = dust.width, H = dust.height;
+  dc.clearRect(0, 0, W, H);
+  if (reduced) return;
+  if (deskCam.on && k > 4.6) { drawDeskDust(k); return; }
+  dustCam = null;
+  // only visible while the neon is the main light
+  const amount = neon * (1 - lit) * (k < 1.6 ? 1 : 0);
+  if (amount < 0.02) return;
+  // where the sign is on screen right now
+  const sx = lastTx + SIGN.x * geo.w * lastS, sy = lastTy + SIGN.y * geo.h * lastS;
+  const reach = SIGN.w * geo.w * lastS * 1.1;
+  const now = performance.now() / 1000;
+  for (const m of motes) {
+    m.x += m.vx; m.y += m.vy;
+    if (m.y < -0.05) { m.y = 1.05; m.x = Math.random(); }
+    if (m.x < -0.05) m.x = 1.05; else if (m.x > 1.05) m.x = -0.05;
+    const px = m.x * innerWidth, py = m.y * innerHeight;
+    const d = Math.hypot(px - sx, (py - sy) * 1.6) / reach;
+    const lightHere = Math.exp(-d * d);
+    const tw = 0.6 + 0.4 * Math.sin(now * 1.3 + m.ph);
+    const alpha = amount * lightHere * tw * 0.7 * m.z;
+    if (alpha < 0.01) continue;
+    const r = (0.6 + m.z * 1.6) * dpr;
+    dc.fillStyle = `rgba(255, 190, 130, ${alpha.toFixed(3)})`;
+    dc.beginPath(); dc.arc(px * dpr, py * dpr, r, 0, 6.283); dc.fill();
+  }
+}
+
+// ---------- the scene timeline (scrubbed by scroll) ----------
+const tl = gsap.timeline({ paused: true });
+tl.addLabel('s1');
+
+// 01 -> 02: the title dissolves and the darkness lifts as you scroll...
+tl.to('#title', { opacity: 0, y: -18, filter: 'blur(6px)', duration: 0.7, ease: 'power2.in' })
+  .to(curtain, { opacity: 0, duration: 0.8, ease: 'power1.inOut' }, '-=0.25');
+
+// ...then the neon sputters on by itself (a real-time flicker, not scrubbed, so it always crackles)
+const lights = [signL, fx];
+const flick = gsap.timeline({ paused: true });
+if (reduced) {
+  flick.to(lights, { opacity: 1, duration: 0.8 });
+} else {
+  [[.5, .2], [0, .07], [.75, .12], [.08, .05], [0, .05], [.9, .3], [.35, .06]]
+    .forEach(([o, gap]) => {
+      flick.to(lights, { opacity: o, duration: 0.03, ease: 'none' }, `+=${gap}`);
+      flick.call(() => sound.zap(o), null, '<');   // electrical zap on every flicker
+    });
+  flick.to(lights, { opacity: 1, duration: 0.4, ease: 'power2.out' }, '+=0.05');
+  flick.call(() => sound.zap(1), null, '<');
+}
+let neonOn = false;
+tl.call(() => {
+  if (forwardMove && !neonOn) { neonOn = true; flick.restart(); }
+  else if (!forwardMove && neonOn) { neonOn = false; flick.pause(); gsap.to(lights, { opacity: 0, duration: 0.35, ease: 'power2.in' }); }
+}, null, '-=0.2');
+tl.to({}, { duration: 0.6 });                     // a beat while the neon catches
+tl.addLabel('s2');
+
+// 02 -> 03: slow dolly in
+tl.to(cam, { k: 1, duration: 2.8, ease: 'power1.inOut' }, 's2');
+tl.addLabel('s3');
+
+// 03 -> 04: pull back, lamps buzz on, letterbox opens
+tl.to(cam, { k: 2, duration: 3.4, ease: 'power1.inOut' }, 's3');
+tl.addLabel('s4');
+
+// 04 -> 05: one continuous take (video): he walks to the mirror and meets his own eyes.
+// Linear here: the scroll glide already eases in and out.
+tl.to(cam, { k: 3, duration: 4.2, ease: 'none' }, 's4');
+// light glints off the glass, and the intro appears
+tl.to('#aboutShade', { opacity: 1, duration: 1.4, ease: 'power1.inOut' }, 's4+=3.2');
+if (!reduced) {
+  // hidden until its moment: parked at the start it would sit on the glass as a stray line in scenes 1-4
+  tl.fromTo('.glass', { visibility: 'hidden' }, { visibility: 'visible', duration: 0, immediateRender: false }, 's4+=3.35');
+tl.fromTo('.glass', { visibility: 'visible' }, { visibility: 'hidden', duration: 0, immediateRender: false }, 's4+=5.3');
+  tl.fromTo('#sheen', { xPercent: -100 }, { xPercent: 420, duration: 1.8, ease: 'power2.inOut' }, 's4+=3.4')
+    .to('#sheen', { opacity: 1, duration: 0.3, ease: 'none' }, 's4+=3.4');
+}
+tl.call(() => { if (forwardMove) sound.shimmer(); }, null, 's4+=3.5');
+tl.fromTo(['#about .eyebrow', '#about h2', '#about .role'], { opacity: 0, y: 16, filter: 'blur(6px)' },
+  { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, stagger: 0.14, ease: 'power3.out' }, 's4+=3.6');
+tl.addLabel('s5');
+
+// 05 -> 06: the camera eases back from the face, the name card rises, the rest of the story follows
+tl.to(cam, { k: 4, duration: 2.4, ease: 'power2.inOut' }, 's5');
+tl.to(aboutLift, { v: 0, duration: 1.8, ease: 'power3.inOut' }, 's5+=0.2');
+tl.fromTo(['#about .rule', '#about p', '#about li'], { opacity: 0, y: 14, filter: 'blur(6px)' },
+  { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, stagger: 0.08, ease: 'power3.out' }, 's5+=1.0');
+tl.addLabel('s6');
+
+// 06 -> 07: the story steps aside and the camera whips right, across the room to the desk
+tl.to(['#about', '#aboutShade'], { opacity: 0, duration: 0.6, ease: 'power1.in' }, 's6');
+tl.to(cam, { k: 5, duration: 2.6, ease: 'power2.inOut' }, 's6');
+tl.fromTo(['#skillsHead .eyebrow', '#skillsHead h2'], { opacity: 0, y: 14, filter: 'blur(6px)' },
+  { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, stagger: 0.14, ease: 'power3.out' }, 's6+=2.0');
+tl.to(skillsState, { headIn: 1, duration: 0.6, ease: 'power1.out' }, 's6+=2.0');
+tl.addLabel('s7');
+
+// 07 -> 08: the camera moves in on the notes on the wall, and the writing appears on them line by line
+tl.to(cam, { k: 6, duration: 2.4, ease: 'power2.inOut' }, 's7');
+jotEls.forEach((j, i) => {
+  const t0 = (2.2 + i * 0.6).toFixed(2);
+  tl.fromTo(j.querySelectorAll('b, span'), { clipPath: 'inset(0% 100% 0% 0%)' },
+    { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.32, stagger: 0.15, ease: 'power1.inOut' }, `s7+=${t0}`);
+  tl.call(() => { if (forwardMove) sound.lamp(0.03); }, null, `s7+=${t0}`);
+});
+tl.to({}, { duration: 0.5 });
+tl.addLabel('s8');
+
+// 08 -> 09: the camera slides across the desk to the framed resume; its words arrive beside it
+tl.to('#jots', { opacity: 0, duration: 0.4, ease: 'power1.in' }, 's8');
+tl.to(cam, { k: 7, duration: 2.6, ease: 'power2.inOut' }, 's8');
+tl.to(skillsState, { ctaIn: 1, duration: 0.6, ease: 'power1.out' }, 's8+=2.2');
+tl.fromTo('#resumeCta > *', { opacity: 0, y: 14, filter: 'blur(6px)' },
+  { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, stagger: 0.1, ease: 'power3.out' }, 's8+=2.2');
+tl.addLabel('s9');
+
+// 09 -> 10: the words step away and the camera rises across the desk to the monitor. As it arrives the
+// screen flickers on, its light falls on the wall, the name shows for a moment, then the window opens
+tl.to(skillsState, { ctaIn: 0, duration: 0.45, ease: 'power1.in' }, 's9');
+tl.to(cam, { k: 8, duration: 2.6, ease: 'power2.inOut' }, 's9');
+tl.call(() => { if (forwardMove) sound.lamp(0.05); }, null, 's9+=1.7');
+[[0.7, 0.05], [0.12, 0.05], [0.85, 0.06], [0.45, 0.05], [1, 0.3]].forEach(([o, d], n, arr) => {
+  const at = 1.7 + arr.slice(0, n).reduce((a, [, dd]) => a + dd, 0);
+  tl.to(['#monLight', '#monSpill'], { opacity: o, duration: d, ease: 'none' }, `s9+=${at.toFixed(2)}`);
+});
+tl.fromTo('#monBoot', { autoAlpha: 0, filter: 'blur(6px)' }, { autoAlpha: 1, filter: 'blur(0px)', duration: 0.4, ease: 'power2.out' }, 's9+=2.05');
+tl.to('#monBoot', { autoAlpha: 0, filter: 'blur(4px)', duration: 0.35, ease: 'power1.in' }, 's9+=2.6');
+tl.fromTo('#monUi', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.45, ease: 'power1.out' }, 's9+=2.8');
+tl.fromTo(['#monUi .os-task', '#monUi .os-win', '#monProj .mon-head', '#monProj li'], { opacity: 0, y: 10, filter: 'blur(4px)' },
+  { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.5, stagger: 0.1, ease: 'power3.out' }, 's9+=2.9');
+tl.addLabel('s10');
+
+// 10 -> 11: the window switches to its other tab. The projects lift away, the camera eases in a touch,
+// and the jobs arrive one by one
+tl.to(['#monProj .mon-head', '#monProj li'], { opacity: 0, y: -10, filter: 'blur(4px)', duration: 0.4, stagger: 0.05, ease: 'power1.in' }, 's10');
+tl.to('#monUi', { '--p': 1, duration: 0.3, ease: 'none' }, 's10+=0.2');   // sidebar, window title and dock follow
+tl.to(monPush, { v: 1, duration: 1.6, ease: 'power2.inOut' }, 's10');
+tl.set('#monProj', { autoAlpha: 0 }, 's10+=0.62');
+tl.set('#monExp', { autoAlpha: 1 }, 's10+=0.62');
+tl.fromTo(['#monExp .mon-head', '#monExp li'], { opacity: 0, y: 10, filter: 'blur(4px)' },
+  { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.5, stagger: 0.1, ease: 'power3.out' }, 's10+=0.65');
+tl.addLabel('s11');
+
+// 11 -> 12: the screen goes dark and the camera pulls back from the monitor until the whole room is
+// in view, then glides across to him sitting in the bean bag, and settles on the close picture of him
+tl.to('#monUi', { autoAlpha: 0, duration: 0.4, ease: 'power1.in' }, 's11+=0.1');
+// the room picture takes over, lined up on the same monitor
+tl.fromTo('#roomWide', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, ease: 'none', immediateRender: false }, 's11+=0.3');
+tl.fromTo(rw, { p: 0 }, { p: 1, duration: 1.3, ease: 'power2.inOut', immediateRender: false }, 's11+=0.6');
+tl.fromTo(rw, { p: 1 }, { p: 2, duration: 1.3, ease: 'power2.inOut', immediateRender: false }, 's11+=1.9');
+// the close picture fades in exactly over him
+tl.fromTo('#contact', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut', immediateRender: false }, 's11+=2.75');
+tl.fromTo('#contactCard > *', { opacity: 0, y: 16, filter: 'blur(6px)' },
+  { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.8, stagger: 0.13, ease: 'power3.out' }, 's11+=3.1');
+tl.to({}, { duration: 0.3 });
+tl.addLabel('s12');
+
+
+// ---------- ambient life ----------
+if (!reduced) {
+  gsap.to(glow, { opacity: 0.94, duration: 2.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to('.flare', { scaleX: 1.08, duration: 2.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  // haze slowly rolls through the light
+  gsap.to('#haze1', { backgroundPosition: '100% 30%', duration: 26, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to('#haze2', { backgroundPosition: '0% 100%', duration: 34, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to(drift, { x: 6, duration: 7, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to(drift, { y: -4, duration: 5.3, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to(drift, { z: 0.012, duration: 9, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+
+  const g = document.createElement('canvas'); g.width = g.height = 160;
+  const gc = g.getContext('2d'), grain = $('grain'), frames = [];
+  for (let f = 0; f < 6; f++) {
+    const d = gc.createImageData(160, 160);
+    for (let p = 0; p < d.data.length; p += 4) { const v = Math.random() * 255; d.data[p] = d.data[p + 1] = d.data[p + 2] = v; d.data[p + 3] = 255; }
+    gc.putImageData(d, 0, 0); frames.push(`url(${g.toDataURL()})`);
+  }
+  let gf = 0;
+  setInterval(() => { grain.style.backgroundImage = frames[gf = (gf + 1) % frames.length]; }, 80);
+}
+
+// ---------- opening title (plays once on load) ----------
+// it waits behind the entry gate: nothing plays until the visitor chooses sound or silence
+const intro = gsap.timeline({ paused: true, onComplete: () => updateUI(0) });
+if (reduced) {
+  intro.set([titleLetters, '#titleSmall', '#titleRole'], { opacity: 1 }).set('#titleRule', { width: 120 });
+} else {
+  intro.call(() => sound.title('rise'), null, 0)
+    .fromTo('#titleSmall', { opacity: 0, letterSpacing: '1.2em' }, { opacity: 1, letterSpacing: '.6em', duration: 1.6, ease: 'power2.out' }, 0)
+    .fromTo(titleLetters, { opacity: 0, y: 14, filter: 'blur(8px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.1, stagger: 0.07, ease: 'power3.out' }, 0.5);
+  titleLetters.forEach((_, n) => intro.call(() => sound.title('letter', n), null, 0.5 + n * 0.07));
+  intro.call(() => sound.title('hit'), null, 0.5 + titleLetters.length * 0.07 + 0.12)
+    .to('#titleRule', { width: 140, duration: 1.2, ease: 'power2.inOut' }, 1.63)
+    .call(() => sound.title('shing'), null, 1.66)
+    .fromTo('#titleRole', { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, 2.0);
+}
+
+// decode every picture while the visitor is at the door, so no scene stutters the first time it appears
+const decodeAll = () => document.querySelectorAll('img').forEach(img => { if (img.decode) img.decode().catch(() => {}); });
+if (document.readyState === 'complete') decodeAll(); else addEventListener('load', decodeAll, { once: true });
+
+// ---------- entry gate: a door with light under it; enter with sound, or without ----------
+let gateOpen = true;
+const gate = $('gate');
+// a still of grain over the hall, made once
+{
+  const c = document.createElement('canvas'); c.width = c.height = 160;
+  const g = c.getContext('2d'), d = g.createImageData(160, 160);
+  for (let p = 0; p < d.data.length; p += 4) { const v = Math.random() * 255; d.data[p] = d.data[p + 1] = d.data[p + 2] = v; d.data[p + 3] = 255; }
+  g.putImageData(d, 0, 0); $('gateGrain').style.backgroundImage = `url(${c.toDataURL()})`;
+}
+// the lamp in the room breathes a little, so the light under the door is never quite still;
+// pointing at a button brightens it, as if someone inside heard you
+const doorLeak = $('doorLeak'), doorSpill = $('doorSpill');
+const lamp = { boost: 0 };
+function lampTick(time) {
+  if (!gate.isConnected) { gsap.ticker.remove(lampTick); return; }
+  const f = reduced ? 0.95 : 0.9 + 0.055 * Math.sin(time * 1.3) + 0.035 * Math.sin(time * 3.9 + 1.7);
+  doorLeak.style.opacity = Math.min(1, f + lamp.boost * 0.1).toFixed(3);
+  doorSpill.style.opacity = Math.min(1, f * (0.82 + lamp.boost * 0.3)).toFixed(3);
+}
+gsap.ticker.add(lampTick);
+gate.querySelectorAll('button').forEach(b => {
+  const up = () => gateOpen && gsap.to(lamp, { boost: 1, duration: 0.5, ease: 'power2.out', overwrite: true });
+  const down = () => gateOpen && gsap.to(lamp, { boost: 0, duration: 0.8, ease: 'power2.out', overwrite: true });
+  b.addEventListener('pointerenter', up); b.addEventListener('pointerleave', down);
+  b.addEventListener('focus', up); b.addEventListener('blur', down);
+});
+
+function enter(withSound) {
+  if (!gateOpen) return;
+  gateOpen = false;
+  if (withSound) sound.enable();
+  gate.querySelectorAll('button').forEach(b => b.disabled = true);
+  const finish = (delay) => {
+    gsap.to(gate, { opacity: 0, duration: 0.9, delay, ease: 'power1.inOut', onComplete: () => gate.remove() });
+    gsap.delayedCall(delay + 0.2, () => {
+      forwardMove = true;
+      snapTween = gsap.to(scroll, { target: LABELS[0], duration: reduced ? 0.01 : 1.8, ease: 'power2.inOut',
+        onComplete: () => { snapTween = null; } });
+    });
+  };
+  if (reduced) { finish(0); return; }
+  const tl = gsap.timeline();
+  // the handle goes down and the latch clicks
+  tl.call(() => withSound && sound.door('latch'), null, 0)
+    .to('#doorLever', { rotation: -32, duration: 0.16, ease: 'power2.out' }, 0)
+    .to(lamp, { boost: 1, duration: 0.3, overwrite: true }, 0)
+    // the door eases off its frame: a crack of light down the edge
+    .call(() => withSound && sound.door('creak', 1.9), null, 0.3)
+    .to('#door', { rotationY: 7, duration: 0.45, ease: 'power2.out' }, 0.3)
+    .to('#doorLever', { rotation: 0, duration: 0.3, ease: 'power2.inOut' }, 0.5)
+    // then it swings in, and the room's light pours out across the floor
+    .to('#door', { rotationY: 84, duration: 1.5, ease: 'power2.inOut' }, 0.8)
+    .to('#doorShade', { opacity: 0.75, duration: 1.5, ease: 'power2.in' }, 0.8)
+    .to('#doorSpillLight', { scaleX: 3.2, scaleY: 1.8, duration: 1.6, ease: 'power2.inOut' }, 0.8)
+    .to('#beyond', { filter: 'brightness(1.25)', duration: 1.4 }, 0.8)
+    .call(() => withSound && sound.door('room'), null, 1.3)
+    // we walk into it: the doorway fills the screen and the light takes over
+    .to('#hall', { scale: 7, duration: 1.7, ease: 'power3.in' }, 1.5)
+    .to('#gateFlood', { opacity: 1, duration: 0.9, ease: 'power1.in' }, 2.3);
+  finish(3.25);
+}
+$('enterSound').addEventListener('click', () => enter(true));
+$('enterQuiet').addEventListener('click', () => enter(false));
+// the hall comes up out of the dark
+gsap.to('#gateDim', { opacity: 0, duration: reduced ? 0.4 : 2, delay: 0.25, ease: 'power1.inOut' });
+$('enterSound').focus({ preventScroll: true });
+
+// sound switched on while the name is on screen: the name dissolves and builds again, with sound
+function replayTitle() {
+  if (reduced || scroll.pos > 0.02 || intro.isActive()) return;
+  gsap.to([titleLetters, '#titleSmall', '#titleRule'], { opacity: 0, duration: 0.35, ease: 'power1.in',
+    onComplete: () => { gsap.set('#titleRule', { opacity: 1, width: 0 }); intro.restart(); } });
+}
+
+// ---------- resume: the frame on the desk opens it ----------
+const resumeModal = $('resumeModal');
+let resumeOpen = false, resumeBack = null;
+function openResume() {
+  if (resumeOpen) return;
+  resumeOpen = true; resumeBack = document.activeElement;
+  resumeModal.classList.add('open'); resumeModal.setAttribute('aria-hidden', 'false');
+  document.querySelector('.resume-sheet').scrollTop = 0;
+  sound.lamp(0.05);
+  $('resumeClose').focus({ preventScroll: true });
+}
+function closeResume() {
+  if (!resumeOpen) return;
+  resumeOpen = false;
+  resumeModal.classList.remove('open'); resumeModal.setAttribute('aria-hidden', 'true');
+  if (resumeBack && resumeBack.focus) resumeBack.focus({ preventScroll: true });
+}
+frameHit.addEventListener('click', openResume);
+$('resumeOpen').addEventListener('click', openResume);
+$('resumeClose').addEventListener('click', closeResume);
+resumeModal.addEventListener('click', e => { if (e.target === resumeModal) closeResume(); });
+
+// ---------- the computer on the desk: clock, sidebar and dock ----------
+const osDate = $('osDate'), osTime = $('osTime');
+function tickClock() {
+  const d = new Date();
+  osDate.textContent = d.toLocaleDateString('en-GB');
+  osTime.textContent = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+tickClock(); setInterval(tickClock, 15000);
+document.querySelectorAll('#monUi [data-go]').forEach(b => b.addEventListener('click', () => goTo(STOPS.findIndex(st => st.id === b.dataset.go))));
+$('dockResume').addEventListener('click', openResume);
+
+// ---------- a project's case study opens in a window here, grown out of its card ----------
+const CASES = {
+  severna: {
+    title: 'Severna: Blood & Betrayal', eyebrow: 'Medieval dark fantasy · PC strategy · In development', hero: 'assets/cs-sev-menu.webp',
+    meta: [['Type', 'Game UI'], ['Role', 'UX/UI Designer'], ['Company', 'Nytwolf Games']],
+    lead: 'An in-development medieval dark-fantasy strategy game. I designed and refined in-game UI systems and widgets, with a focus on readability, information hierarchy, consistency and gameplay interactions.',
+    sections: [
+      ['My contribution', [
+        'I worked on the game’s interface layer, designing and refining 20+ in-game widgets across character management, faction and building information, gameplay interactions and supporting systems.',
+        'My focus was clear information hierarchy, readable layouts, consistent widget structures and reusable UI components that work across different gameplay situations.',
+        'A key priority was balancing the medieval dark-fantasy look with practical readability, so tactical information stays easy to read during high-pressure decisions.']],
+    ],
+    gallery: [
+      { src: 'assets/cs-sev-menu.webp', tag: '01 — Title & campaign', name: 'Main title menu', short: 'Main menu', text: 'A dark fantasy title menu with campaign navigation, battle selection, options and exit.' },
+      { src: 'assets/cs-sev-options.webp', tag: '02 — Settings & options', name: 'Game settings & options', short: 'Options', text: 'Settings for interface language, text size, UI theme, graphics quality and resolution.' },
+      { src: 'assets/cs-sev-details.webp', tag: '03 — Character management', name: 'Overview & details', short: 'Details', text: 'A character overview with leader attributes, traits, ambition progress and combat stats.' },
+      { src: 'assets/cs-sev-hud.webp', tag: '04 — Tactical battlefield', name: 'Gameplay & battle HUD', short: 'Battle HUD', text: 'A real-time battlefield HUD with a unit command bar, troop cards, unit stats and deployment zones.' },
+    ],
+    steps: ['Requirement', 'Research & references', 'Exploration', 'Feedback', 'High-fidelity design', 'Refinement', 'Development handoff'],
+    stepsText: [
+      'I started by understanding the gameplay need and the information the player needs at each moment. I studied other medieval and strategy games for proven patterns and visual approaches.',
+      'Ideas began as low-fidelity layouts before high-fidelity design. Feedback shaped hierarchy, spacing, readability and consistency. Final widgets were split into pieces and prepared for Unreal Engine.'],
+    results: ['Improved readability', 'More consistent widgets', 'Better information hierarchy', 'Easier gameplay interactions', 'Reusable components for developers', 'Better visual consistency'],
+  },
+  nytwolf: {
+    title: 'Nytwolf Games', eyebrow: 'Company website · Responsive web', hero: 'assets/work-nytwolf.webp',
+    meta: [['Type', 'Company website'], ['Role', 'UX/UI Designer'], ['Focus', 'Responsive web design']],
+    lead: 'A responsive website for an independent game studio: a digital space that introduces the studio and presents its work in a clear and engaging way.',
+    sections: [
+      ['My contribution', [
+        'I designed the website’s UX/UI: page layouts, interface elements, and how the experience adapts across screen sizes.',
+        'I turned the studio’s bold gaming brand into a dark-mode-first look with custom game showcase cards, refined micro-interactions and high-contrast type.']],
+    ],
+    shots: [{ src: 'assets/work-nytwolf.webp', alt: 'Nytwolf Games website home page' }],
+    live: 'https://www.nytwolfgames.com/',
+    results: ['Clear studio introduction', 'Game showcase cards', 'Works on every screen size', 'Dark-mode-first brand look'],
+  },
+  cotons: {
+    title: 'Cotons AI', eyebrow: 'B2B SaaS platform · Health tech', hero: 'assets/cs-cotons-hero.webp',
+    meta: [['Type', 'B2B SaaS platform'], ['Role', 'UX/UI Designer'], ['Domain', 'Healthcare CRM']],
+    lead: 'An end-to-end lead management and sales pipeline platform for medical device sales teams, from prospecting hospitals and tracking new leads to device support after the sale.',
+    sections: [
+      ['My contribution', [
+        'I designed the complete web app: clear data tables, multi-stage sales funnels and navigation that help sales reps and managers follow a lead from first contact to appointment.',
+        'I built clean dashboard layouts with status tags, quick filters and a device-issue ticket system, turning complex healthcare sales work into a calm, clutter-free workspace.']],
+    ],
+    shots: [{ src: 'assets/cs-cotons.webp', alt: 'Cotons AI active leads table with status tags' }],
+    results: ['Manage leads', 'Track progress', 'Close deals faster', 'Device support tickets'],
+  },
+};
+const CASE_ORDER = ['severna', 'nytwolf', 'cotons'];
+const caseEl = $('case'), caseWin = $('caseWin'), caseBody = $('caseBody');
+let caseOpen = false, caseBack = null, caseKey = null;
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+function caseHTML(k) {
+  const c = CASES[k], nx = CASES[CASE_ORDER[(CASE_ORDER.indexOf(k) + 1) % CASE_ORDER.length]];
+  let h = `<div class="case-hero"><img src="${c.hero}" alt=""><div class="head"><div class="case-eyebrow">${esc(c.eyebrow)}</div><h1>${esc(c.title)}</h1></div></div>
+  <div class="case-inner"><p class="case-lead">${esc(c.lead)}</p>
+  <div class="case-meta">${c.meta.map(([a, b]) => `<div><small>${a}</small><span>${esc(b)}</span></div>`).join('')}</div>`;
+  if (c.live) h += `<a class="case-live" href="${c.live}" target="_blank" rel="noopener">Visit live website ↗</a>`;
+  c.sections.forEach(([t, ps]) => { h += `<div class="case-sec"><h3>${t}</h3>${ps.map(p => `<p>${esc(p)}</p>`).join('')}</div>`; });
+  if (c.gallery) {
+    const g = c.gallery[0];
+    h += `<h3>UI showcase</h3><div class="case-shot"><img id="csMain" src="${g.src}" alt="${esc(g.name)}"></div>
+    <div class="case-cap" id="csCap"><small>${esc(g.tag)}</small><b>${esc(g.name)}</b><p>${esc(g.text)}</p></div>
+    <div class="case-thumbs" role="tablist">${c.gallery.map((x, i) => `<button type="button" role="tab" data-i="${i}" aria-selected="${i === 0}"><img src="${x.src}" alt=""><span>${esc(x.short)}</span></button>`).join('')}</div>`;
+  }
+  if (c.shots) h += `<h3>The design</h3>` + c.shots.map(x => `<div class="case-shot"><img src="${x.src}" alt="${esc(x.alt)}"></div>`).join('');
+  if (c.steps) h += `<div class="case-sec"><h3>Design process</h3><ol class="case-steps">${c.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>${c.stepsText.map(p => `<p style="margin-top:14px">${esc(p)}</p>`).join('')}</div>`;
+  h += `<h3>Result</h3><ul class="case-list">${c.results.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+  <button type="button" class="case-next" data-next="${CASE_ORDER[(CASE_ORDER.indexOf(k) + 1) % CASE_ORDER.length]}"><div><small>Next project</small><b>${esc(nx.title)}</b></div><span aria-hidden="true">→</span></button></div>`;
+  return h;
+}
+function fillCase(k) {
+  caseKey = k;
+  caseBody.innerHTML = caseHTML(k);
+  caseBody.scrollTop = 0;
+  $('caseTitle').textContent = CASES[k].title + ' — Case study';
+}
+caseBody.addEventListener('click', e => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.dataset.next) { gsap.fromTo(caseBody, { opacity: 0 }, { opacity: 1, duration: 0.4 }); fillCase(t.dataset.next); caseBody.focus({ preventScroll: true }); return; }
+  if (t.dataset.i != null) {
+    const g = CASES[caseKey].gallery[+t.dataset.i], img = $('csMain');
+    caseBody.querySelectorAll('.case-thumbs button').forEach(b => b.setAttribute('aria-selected', b === t));
+    gsap.to(img, { opacity: 0, duration: 0.15, onComplete: () => { img.src = g.src; img.alt = g.name; gsap.to(img, { opacity: 1, duration: 0.3 }); } });
+    $('csCap').innerHTML = `<small>${esc(g.tag)}</small><b>${esc(g.name)}</b><p>${esc(g.text)}</p>`;
+  }
+});
+// the window grows out of the card (and shrinks back into it)
+function cardRect(k) { const b = document.querySelector(`#monProj [data-case="${k}"]`); return b && b.getBoundingClientRect(); }
+function flipFrom(r) {
+  const f = caseWin.getBoundingClientRect();
+  return { x: r.left - f.left, y: r.top - f.top, scaleX: r.width / f.width, scaleY: r.height / f.height, transformOrigin: '0 0' };
+}
+function openCase(k) {
+  if (caseOpen) return;
+  caseOpen = true; caseBack = document.activeElement;
+  fillCase(k);
+  caseEl.classList.add('open'); caseEl.setAttribute('aria-hidden', 'false');
+  const r = cardRect(k);
+  if (r && !reduced) gsap.fromTo(caseWin, { ...flipFrom(r), opacity: 0.4 }, { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: 0.6, ease: 'power3.out' });
+  sound.lamp(0.05);
+  caseBody.focus({ preventScroll: true });
+}
+function closeCase() {
+  if (!caseOpen) return;
+  caseOpen = false;
+  const r = cardRect(CASE_ORDER.includes(caseKey) ? caseKey : 'severna');
+  const done = () => { caseEl.classList.remove('open'); caseEl.setAttribute('aria-hidden', 'true'); gsap.set(caseWin, { clearProps: 'transform,opacity' }); };
+  if (r && r.width && !reduced) gsap.to(caseWin, { ...flipFrom(r), opacity: 0, duration: 0.4, ease: 'power2.in', onComplete: done });
+  else done();
+  if (caseBack && caseBack.focus) caseBack.focus({ preventScroll: true });
+}
+document.querySelectorAll('#monProj [data-case]').forEach(b => b.addEventListener('click', () => openCase(b.dataset.case)));
+$('caseClose').addEventListener('click', closeCase);
+caseEl.addEventListener('click', e => { if (e.target === caseEl) closeCase(); });
+
+// ---------- scroll drives the camera (smooth-scroll style) ----------
+// The wheel / finger moves a target position on the timeline; the playhead chases it with
+// an exponential ease, so the camera always glides and stops softly. When you let go
+// between two scenes, it settles on the nearest one in the direction you were going.
+// resting points: one per scene
+const STOPS = [
+  { id: 's2', scene: 0 }, { id: 's3', scene: 1 }, { id: 's4', scene: 2 },
+  { id: 's5', scene: 3 },
+  { id: 's6', scene: 3, hint: 'Scroll to see my skills' },
+  { id: 's7', scene: 4 },
+  { id: 's8', scene: 4, hint: 'Scroll to see my resume' },
+  { id: 's9', scene: 5 },
+  { id: 's10', scene: 6 },
+  { id: 's11', scene: 7 },
+  { id: 's12', scene: 8 },
+];
+const LABELS = STOPS.map(st => tl.labels[st.id]);
+const END = LABELS[LABELS.length - 1];
+const scroll = { target: 0, pos: 0 };
+let snapTween = null, idleTimer = 0, current = 0, settled = true, lastDir = 1;
+const WHEEL = 0.0042;      // timeline seconds per pixel of wheel
+const TOUCH = 0.011;       // timeline seconds per pixel of finger drag
+
+SCENES.forEach((sc, i) => {
+  const b = document.createElement('button');
+  b.setAttribute('aria-label', `Scene ${i + 1}: ${sc.name}`);
+  b.addEventListener('click', () => goTo(STOPS.findIndex(st => st.id === sc.id)));
+  dotsNav.appendChild(b);
+});
+
+function updateUI(i) {
+  const st = STOPS[i], sc = SCENES[st.scene], hintTx = st.hint ?? sc.hint;
+  [...dotsNav.children].forEach((d, j) => d.classList.toggle('on', j === st.scene));
+  hintText.textContent = hintTx;
+  gsap.to(hint, { opacity: hintTx ? 0.7 : 0, duration: 0.8, delay: 0.2 });
+  chapNum.textContent = String(st.scene + 1).padStart(2, '0');
+  chapName.textContent = st.name || sc.name;
+  gsap.fromTo(chapter, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.9, ease: 'power2.out' });
+}
+
+const nearest = t => LABELS.reduce((b, v, i) => Math.abs(v - t) < Math.abs(LABELS[b] - t) ? i : b, 0);
+
+function glideTo(t) {
+  if (snapTween) snapTween.kill();
+  const d = Math.abs(t - scroll.target);
+  if (d < 0.001) { snapTween = null; return; }
+  snapTween = gsap.to(scroll, {
+    target: t, duration: Math.min(3.4, Math.max(0.6, d * 0.55)), ease: 'power2.inOut',
+    onComplete: () => { snapTween = null; },
+  });
+}
+
+function goTo(i) {
+  i = Math.max(0, Math.min(STOPS.length - 1, i));
+  if (intro.isActive()) intro.progress(1);
+  lastDir = LABELS[i] >= scroll.target ? 1 : -1;
+  glideTo(LABELS[i]);
+}
+
+// settle on a scene when the visitor stops between two
+function snap() {
+  const t = scroll.target;
+  if (LABELS.some(v => Math.abs(v - t) < 0.01)) return;
+  const i = LABELS.findIndex(v => v > t) - 1;
+  if (i < 0) return glideTo(LABELS[0]);
+  const a = LABELS[i], b = LABELS[i + 1], f = (t - a) / (b - a);
+  // carry on in the direction you were scrolling once a quarter of the way in (or one small flick)
+  const q = Math.min(0.25, 0.3 / (b - a));
+  glideTo(lastDir > 0 ? (f > q ? b : a) : (f < 1 - q ? a : b));
+}
+
+function nudge(dt) {
+  if (!dt) return;
+  if (intro.isActive()) intro.progress(1);
+  if (snapTween) { snapTween.kill(); snapTween = null; }
+  lastDir = Math.sign(dt);
+  scroll.target = Math.max(LABELS[0], Math.min(END, scroll.target + dt));
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(snap, 420);
+}
+
+addEventListener('wheel', e => {
+  if (caseOpen || resumeOpen) return;   // a case study or the resume is open: that sheet scrolls by itself
+  e.preventDefault();
+  if (gateOpen) return;
+  const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
+  nudge(Math.max(-240, Math.min(240, px)) * WHEEL);
+}, { passive: false });
+
+// Phones: one swipe = one scene. The scenes at the start sit close together on the timeline, so a
+// free-running swipe used to fly past two or three of them. Now the camera follows the finger only as
+// far as the next scene either way, and on release it glides on to that scene (or back, if the drag
+// was tiny), so every scene gets its stop.
+let touchY = null, touchV = 0, touchT = 0, touchSum = 0, touchRange = null;
+addEventListener('touchstart', e => {
+  touchY = e.touches[0].clientY; touchV = 0; touchT = performance.now(); touchSum = 0;
+  const t = scroll.target, on = LABELS.findIndex(v => Math.abs(v - t) < 0.02);
+  let lo, hi;
+  if (on >= 0) { lo = Math.max(0, on - 1); hi = Math.min(LABELS.length - 1, on + 1); }
+  else { hi = LABELS.findIndex(v => v > t); if (hi < 0) hi = LABELS.length - 1; lo = Math.max(0, hi - 1); }
+  touchRange = [LABELS[lo], LABELS[hi]];
+}, { passive: true });
+addEventListener('touchmove', e => {
+  if (touchY == null || gateOpen || resumeOpen || caseOpen) return;
+  e.preventDefault();
+  const y = e.touches[0].clientY, now = performance.now();
+  const d = touchY - y;
+  touchV = 0.8 * (d / Math.max(1, now - touchT)) + 0.2 * touchV;   // px per ms
+  touchY = y; touchT = now; touchSum += d;
+  nudge(d * TOUCH);
+  clearTimeout(idleTimer);   // the release decides where to settle, not the idle timer
+  scroll.target = Math.max(touchRange[0], Math.min(touchRange[1], scroll.target));
+}, { passive: false });
+addEventListener('touchend', () => {
+  if (touchY == null) return;
+  touchY = null;
+  if (!touchSum || gateOpen || resumeOpen || caseOpen) return;   // a tap, not a swipe
+  const dir = Math.sign(Math.abs(touchV) > 0.3 ? touchV : touchSum);
+  lastDir = dir;
+  if (Math.abs(touchSum) > 30 || Math.abs(touchV) > 0.3) glideTo(dir > 0 ? touchRange[1] : touchRange[0]);
+  else glideTo(LABELS[nearest(scroll.target)]);
+});
+
+addEventListener('keydown', e => {
+  if (gateOpen) return;          // let Enter / Space press the focused gate button
+  if (caseOpen) {                // a case study is open: Escape closes it; arrows scroll it
+    if (e.key === 'Escape') closeCase();
+    return;
+  }
+  if (resumeOpen) {              // the resume is open: Escape closes it, Tab stays on its close button
+    if (e.key === 'Escape') closeResume();
+    if (e.key === 'Tab') { e.preventDefault(); $('resumeClose').focus(); }
+    return;
+  }
+  // Enter / Space on a focused button (the frame, "Open resume", a scene dot) presses it
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('button')) return;
+  const dir = ['ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key) ? 1 : ['ArrowUp', 'PageUp'].includes(e.key) ? -1 : 0;
+  if (!dir) return;
+  e.preventDefault();
+  const t = scroll.target;
+  // next scene label in that direction
+  const next = dir > 0 ? LABELS.findIndex(v => v > t + 0.01) : LABELS.length - 1 - [...LABELS].reverse().findIndex(v => v < t - 0.01);
+  if (next >= 0 && next < LABELS.length) goTo(next);
+});
+
+// each frame: the playhead chases the target
+let lastScrollT = performance.now();
+function scrubTick() {
+  const now = performance.now(), dt = Math.min(0.1, (now - lastScrollT) / 1000);
+  lastScrollT = now;
+  const gap = scroll.target - scroll.pos;
+  if (Math.abs(gap) > 0.0005) {
+    forwardMove = gap > 0;
+    scroll.pos += gap * (reduced ? 1 : 1 - Math.exp(-dt * 5.2));
+    if (Math.abs(scroll.target - scroll.pos) < 0.0005) scroll.pos = scroll.target;
+    tl.time(scroll.pos);
+  }
+  // captions: hide while travelling, show the scene's caption once the camera rests
+  const moving = Math.abs(gap) > 0.01 || !!snapTween;
+  if (moving && settled) {
+    settled = false;
+    gsap.killTweensOf([hint, chapter]);
+    gsap.to([hint, chapter], { opacity: 0, duration: 0.3 });
+  } else if (!moving && !settled && !intro.isActive()) {
+    settled = true;
+    current = nearest(scroll.pos);
+    updateUI(current);
+  }
+}
+
+
+gsap.set(chapter, { opacity: 0 });
+measure(); render();
+gsap.ticker.add(render);
+addEventListener('resize', () => { measure(); render(); });
+</script>
+</body>
+</html>
