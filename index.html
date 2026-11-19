@@ -2523,9 +2523,17 @@ SCENES.forEach((sc, i) => {
   dotsNav.appendChild(b);
 });
 
+// the dots follow where the camera is heading, not where it has come to rest, so they change the
+// moment you scroll or click instead of after the glide ends
+let dotOn = -1;
+function setDot(scene) {
+  if (scene === dotOn) return;
+  dotOn = scene;
+  [...dotsNav.children].forEach((d, j) => d.classList.toggle('on', j === scene));
+}
 function updateUI(i) {
   const st = STOPS[i], sc = SCENES[st.scene], hintTx = st.hint ?? sc.hint;
-  [...dotsNav.children].forEach((d, j) => d.classList.toggle('on', j === st.scene));
+  setDot(st.scene);
   hintText.textContent = hintTx;
   gsap.to(hint, { opacity: hintTx ? 0.7 : 0, duration: 0.8, delay: 0.2 });
   chapNum.textContent = String(st.scene + 1).padStart(2, '0');
@@ -2656,6 +2664,8 @@ function scrubTick() {
   }
   // captions: hide while travelling, show the scene's caption once the camera rests
   const moving = Math.abs(gap) > 0.01 || !!snapTween;
+  // during a glide the target already is the destination scene
+  if (moving && !intro.isActive()) setDot(STOPS[nearest(snapTween ? snapTween.vars.target : scroll.target)].scene);
   if (moving && settled) {
     settled = false;
     gsap.killTweensOf([hint, chapter]);
