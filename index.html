@@ -782,6 +782,9 @@
         <div class="flare"></div>
       </div>
     </div>
+    <!-- the walk's last frame as a still, under the video: some browsers (Safari, Firefox, phones on
+         battery saver) don't draw a video that is only scrubbed, never played; this still shows instead -->
+    <img class="walk" id="walkEnd" src="assets/walk-end.webp" alt="" aria-hidden="true">
     <video class="walk" id="walk" muted playsinline preload="auto" aria-label="Balayokesh walks to the floor mirror and smiles at the reflection"></video>
     <div class="glass"><div class="sheen" id="sheen"></div></div>
   </div>
@@ -1085,6 +1088,14 @@ let pullReady = false, pullSeekTo = -1, pullCovers = false;
     if (pullSeekTo >= 0) { const t = pullSeekTo; pullSeekTo = -1; pull.currentTime = t; }
   });
 })();
+const walkEnd = document.getElementById('walkEnd');
+// Safari (iPhone above all) may not load or draw a video until it has played once after a tap:
+// play both for an instant on the first tap or click (opening the door counts), then pause
+function wakeVideos() {
+  ['pointerup', 'touchend', 'keydown'].forEach(t => removeEventListener(t, wakeVideos, true));
+  [walk, pull].forEach(v => { try { const p = v.play(); if (p) p.then(() => v.pause(), () => {}); } catch (e) {} });
+}
+['pointerup', 'touchend', 'keydown'].forEach(t => addEventListener(t, wakeVideos, true));
 function scrubPull(p) {
   if (!pullReady || !pull.duration) return;
   const t = Math.min(pull.duration - 0.04, Math.max(0, p * pull.duration));
@@ -1412,6 +1423,9 @@ function render() {
   stage.style.filter = fb > 0.05 ? `blur(${fb.toFixed(2)}px)` : 'none';
   const wp = Math.min(1, Math.max(0, k - 2));
   walk.style.opacity = walkReady ? smooth(2, 2.025, k).toFixed(3) : '0';
+  // the still of the walk's end dissolves in underneath: hidden behind the video when the video draws,
+  // and the face close-up still arrives when it doesn't
+  walkEnd.style.opacity = smooth(0.55, 0.97, wp).toFixed(3);
   if (k > 2) scrubWalk(wp);
 
   // 05 -> 06: one continuous shot. The pull-back video starts on the same face framing the walk
