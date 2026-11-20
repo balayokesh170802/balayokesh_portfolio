@@ -351,6 +351,61 @@
     box-shadow: inset 0 0 18px rgba(0,0,0,.45), 0 0 10px rgba(140,190,220,.22); }
   .mon-spill { position: absolute; z-index: 1; left: 49.7%; top: 31%; width: 74%; height: 120%; transform: translate(-50%, -42%); opacity: 0; pointer-events: none;
     mix-blend-mode: screen; background: radial-gradient(ellipse 50% 44% at 50% 42%, rgba(120,170,210,.2), rgba(90,140,190,.07) 52%, transparent 74%); }
+  /* Skills: the monitor isn't blank. A design tool runs on it, his cursor building an app screen piece
+     by piece (frame, title, picture, button dragged in, text, a prototype link), then it clears and
+     starts again: a 12s loop. Its own layer, so the animation never repaints the big desk picture */
+  .saver { position: absolute; z-index: 1; left: 34.09%; top: 15.52%; width: 31.28%; height: 31.35%; border-radius: 4px; overflow: hidden;
+    pointer-events: none; opacity: 0; will-change: transform; box-shadow: inset 0 0 18px rgba(0,0,0,.5); }
+  .saver svg { display: block; width: 100%; height: 100%; font-family: var(--f-ui), sans-serif; }
+  .saver svg * { transform-box: fill-box; }
+  .saver.paused * { animation-play-state: paused !important; }
+  .saver .sg-all { animation: sgAll 12s linear infinite; }
+  @keyframes sgAll { 0% { opacity: 0; } 3% { opacity: 1; } 92% { opacity: 1; } 98%, 100% { opacity: 0; } }
+  .saver .sg-outline { stroke-dasharray: 1; animation: sgDraw 12s infinite; }
+  @keyframes sgDraw { 0%, 4% { stroke-dashoffset: 1; fill-opacity: 0; } 14% { stroke-dashoffset: 0; fill-opacity: 0; } 17%, 100% { stroke-dashoffset: 0; fill-opacity: 1; } }
+  .saver .sg-hd { transform-origin: 0 50%; animation: sgHd 12s infinite; }
+  @keyframes sgHd { 0%, 18% { transform: scaleX(0); } 23%, 100% { transform: scaleX(1); } }
+  .saver .sg-hd2 { transform-origin: 0 50%; animation: sgHd2 12s infinite; }
+  @keyframes sgHd2 { 0%, 21% { transform: scaleX(0); } 25%, 100% { transform: scaleX(1); } }
+  .saver .sg-img { transform-origin: 50% 50%; animation: sgImg 12s cubic-bezier(.2,.8,.2,1.15) infinite; }
+  @keyframes sgImg { 0%, 27% { opacity: 0; transform: scale(.6); } 33%, 100% { opacity: 1; transform: scale(1); } }
+  .saver .sg-btn { animation: sgBtn 12s cubic-bezier(.45,.05,.35,1) infinite; }   /* same easing and timing as the cursor, so the cursor holds it while dragging */
+  @keyframes sgBtn { 0%, 36% { opacity: 0; transform: translate(150px, -40px); } 39%, 42% { opacity: 1; transform: translate(150px, -40px); }
+    52%, 100% { opacity: 1; transform: translate(0, 0); } }
+  .saver .sg-selbox { animation: sgSel 12s infinite; }
+  @keyframes sgSel { 0%, 41% { opacity: 0; } 42%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+  .saver .sg-ln { transform-origin: 0 50%; animation: sgLn 12s infinite; }
+  .saver .sg-ln.b { animation-name: sgLnB; } .saver .sg-ln.c { animation-name: sgLnC; }
+  @keyframes sgLn { 0%, 56% { transform: scaleX(0); } 60%, 100% { transform: scaleX(1); } }
+  @keyframes sgLnB { 0%, 59% { transform: scaleX(0); } 63%, 100% { transform: scaleX(1); } }
+  @keyframes sgLnC { 0%, 62% { transform: scaleX(0); } 65%, 100% { transform: scaleX(1); } }
+  .saver .sg-chip { animation: sgChip 12s infinite; }
+  @keyframes sgChip { 0%, 64% { opacity: 0; } 67%, 100% { opacity: 1; } }
+  .saver .sg-frame2 { animation: sgF2 12s infinite; }
+  @keyframes sgF2 { 0%, 66% { opacity: 0; } 70%, 100% { opacity: 1; } }
+  .saver .sg-link { stroke-dasharray: 1; animation: sgLink 12s infinite; }
+  @keyframes sgLink { 0%, 70% { stroke-dashoffset: 1; } 78%, 100% { stroke-dashoffset: 0; } }
+  .saver .sg-arrow { animation: sgArrow 12s infinite; }
+  @keyframes sgArrow { 0%, 77% { opacity: 0; } 79%, 100% { opacity: 1; } }
+  .saver .sg-note { transform-origin: 50% 0; animation: sgNote 12s cubic-bezier(.2,.8,.2,1.2) infinite; }
+  @keyframes sgNote { 0%, 4% { opacity: 0; transform: rotate(-4deg) translateY(-8px); } 9%, 100% { opacity: 1; transform: rotate(-4deg); } }
+  .saver .sg-ring { animation: sgRing 12s infinite; }
+  @keyframes sgRing { 0%, 83% { opacity: 0; } 85%, 91% { opacity: 1; } 93%, 100% { opacity: 0; } }
+  .saver .sg-play { transform-origin: 50% 50%; animation: sgPlay 12s infinite; }
+  @keyframes sgPlay { 0%, 79% { opacity: 0; transform: scale(.4); } 82% { opacity: 1; transform: scale(1.15); } 84%, 100% { opacity: 1; transform: scale(1); } }
+  .saver .sg-layer { animation: sgLayer 12s steps(1, end) infinite; }
+  @keyframes sgLayer { 0% { transform: translateY(0); } 18% { transform: translateY(20px); } 27% { transform: translateY(40px); }
+    37% { transform: translateY(60px); } 56% { transform: translateY(80px); } 70%, 100% { transform: translateY(100px); } }
+  /* the cursor: a smooth path that visits each step as it happens */
+  .saver .sg-cur { animation: sgCur 12s cubic-bezier(.45,.05,.35,1) infinite; }
+  @keyframes sgCur {
+    0% { transform: translate(470px, 300px); } 4% { transform: translate(250px, 48px); } 14% { transform: translate(390px, 338px); }
+    18% { transform: translate(266px, 70px); } 24% { transform: translate(370px, 74px); } 28% { transform: translate(320px, 140px); }
+    35% { transform: translate(350px, 160px); } 42% { transform: translate(455px, 270px); } 52% { transform: translate(305px, 310px); }
+    56% { transform: translate(266px, 196px); } 65% { transform: translate(360px, 216px); } 70% { transform: translate(378px, 312px); }
+    78% { transform: translate(432px, 196px); } 85% { transform: translate(569px, 138px); } 92% { transform: translate(560px, 150px); }
+    100% { transform: translate(470px, 300px); } }
+  @media (prefers-reduced-motion: reduce) { .saver * { animation-delay: -11s !important; animation-play-state: paused !important; } }
   /* the lamp's bulb catches the lens: a thin horizontal streak, brightest while the camera moves */
   .lamp-flare { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; pointer-events: none; }
   .lamp-flare i { position: absolute; left: 0; top: 0; width: 64vw; height: 3px; transform: translate(-50%, -50%); border-radius: 50%;
@@ -547,8 +602,13 @@
   .mon-work .mon-tags span { background: rgba(215,232,240,.05); }
   .mon-work b { display: block; font-weight: 600; font-size: 1em; line-height: 1.2; color: #fff6ea; }
   .mon-work p { font-size: .72em; line-height: 1.45; color: rgba(222,233,238,.72); margin-top: .35em; }
-  .mon-work .go { position: absolute; top: .55em; right: .55em; z-index: 1; display: grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: 50%;
-    font-size: .8em; color: #fff6ea; background: rgba(8,13,17,.6); border: 1px solid rgba(215,232,240,.2); opacity: 0; transform: translateY(.3em); transition: opacity .3s, transform .3s; }
+  /* "View ↗" on the picture, for tablets only (no hover there); desktop uses the hover effect alone */
+  .mon-work .go { position: absolute; top: .6em; right: .6em; z-index: 1; display: none; align-items: center; gap: .35em; height: 2.2em; padding: 0 .75em 0 .9em; border-radius: 999px;
+    font-size: .64em; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #1a0f06; background: var(--amber);
+    box-shadow: 0 .3em 1em rgba(0,0,0,.35); opacity: 0; transform: translateY(.4em); transition: opacity .3s, transform .3s; }
+  .mon-work .go i { font-style: normal; }
+  .mon-work .go svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s; }
+  .mon-work button:hover .go svg, .mon-work button:focus-visible .go svg { transform: translate(.1em, -.1em); }
   .mon-work button:hover, .mon-work button:focus-visible { border-color: rgba(245,180,106,.4); background: rgba(245,180,106,.05); transform: translateY(-.2em); }
   .mon-work button:hover img, .mon-work button:focus-visible img { transform: scale(1.05); filter: brightness(1) saturate(1); }
   .mon-work button:hover .go, .mon-work button:focus-visible .go { opacity: 1; transform: none; }
@@ -586,8 +646,13 @@
   .skills.stacked:not(.tab) .mon-work .mon-tags span:nth-child(n+2) { display: none; }
   .skills.stacked:not(.tab) .mon-work p { display: none; }
   .skills.stacked:not(.tab) .mon-work b { font-size: .9em; }
-  .skills.stacked:not(.tab) .mon-work .go { opacity: 1; transform: none; width: 1.6em; height: 1.6em; }
-  .skills.tab .mon-work .go { opacity: 1; transform: none; }
+  /* phones: no badge on the picture; a plain arrow at the end of each row, like any tappable list */
+  .skills.stacked:not(.tab) .mon-work .go { display: none; }
+  .skills.stacked:not(.tab) .mon-work .cap { padding-right: 2.2em; }
+  .skills.stacked:not(.tab) .mon-work button::after { content: ""; position: absolute; right: .95em; top: 50%; width: .5em; height: .5em;
+    border-top: 1.5px solid var(--amber); border-right: 1.5px solid var(--amber); transform: translateY(-50%) rotate(45deg); }
+  /* tablets have no hover, so the badge always shows: a quieter dark glass one, three amber pills was loud */
+  .skills.tab .mon-work .go { display: inline-flex; opacity: 1; transform: none; color: var(--amber); background: rgba(8,13,17,.72); box-shadow: inset 0 0 0 1px rgba(245,180,106,.4), 0 .3em 1em rgba(0,0,0,.35); }
   .skills.stacked .mon-tl { grid-template-columns: 1fr; gap: .6em; padding: 0 0 0 1.4em; }
   .skills.stacked .mon-tl::before { left: .35em; right: auto; top: .9em; bottom: .9em; width: 1px; height: auto;
     background: linear-gradient(0deg, rgba(245,180,106,.8), rgba(215,232,240,.32) 45%, rgba(215,232,240,.12)); }
@@ -760,6 +825,13 @@
     .chapter { left: 16px; }
     .chapter i { display: none; }
   }
+  /* phones: the scroll hint drops to the very bottom edge, clear of every section's words, and the
+     chapter label moves up to the top left, level with the sound button */
+  @media (max-width: 760px), (max-aspect-ratio: 1/1) {
+    .hint { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); gap: 6px; font-size: 10px; letter-spacing: .3em; }
+    .hint i { height: 16px; }
+    .chapter { top: calc(4.5vh - 12px); bottom: auto; height: 24px; }
+  }
 </style>
 </head>
 <body>
@@ -789,7 +861,76 @@
     <div class="glass"><div class="sheen" id="sheen"></div></div>
   </div>
   <div class="wide" id="wide"><img src="assets/about-wide.webp" alt="Balayokesh smiling at the reflection in the tall wooden mirror"><video class="pull" id="pull" muted playsinline preload="auto"></video></div>
-  <div class="desk" id="desk"><div class="lamp-glow" id="lampGlow"></div><canvas class="steam" id="steam" width="240" height="310"></canvas><div class="mon-spill" id="monSpill"></div><div class="mon-light" id="monLight"></div><img src="assets/desk.webp" alt="Balayokesh's desk: monitor, desk lamp, pencil cup, books, four sticky notes on the wall, his resume in a copper glass frame and a cup of coffee"><div class="gframe" aria-hidden="true">
+  <div class="desk" id="desk"><div class="lamp-glow" id="lampGlow"></div><canvas class="steam" id="steam" width="240" height="310"></canvas><div class="mon-spill" id="monSpill"></div><div class="mon-light" id="monLight"></div><img src="assets/desk.webp" alt="Balayokesh's desk: monitor, desk lamp, pencil cup, books, four sticky notes on the wall, his resume in a copper glass frame and a cup of coffee">
+    <div class="saver" id="saver" aria-hidden="true"><svg viewBox="0 0 640 360" preserveAspectRatio="none">
+      <defs>
+        <pattern id="sgDots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#22313b"/></pattern>
+        <linearGradient id="sgSky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7c27e"/><stop offset=".55" stop-color="#e98a4a"/><stop offset="1" stop-color="#9c4424"/></linearGradient>
+        <radialGradient id="sgBg" cx=".5" cy=".45" r=".7"><stop offset="0" stop-color="#16232b"/><stop offset="1" stop-color="#0a0f13"/></radialGradient>
+      </defs>
+      <rect width="640" height="360" fill="url(#sgBg)"/>
+      <rect x="112" y="24" width="416" height="336" fill="url(#sgDots)"/>
+      <!-- top bar -->
+      <rect width="640" height="24" fill="#0f161b"/>
+      <circle cx="12" cy="12" r="3.2" fill="#e0614f"/><circle cx="22" cy="12" r="3.2" fill="#f5b46a"/><circle cx="32" cy="12" r="3.2" fill="#58c27d"/>
+      <text x="320" y="15.5" font-size="8.5" fill="#8b9aa3" text-anchor="middle" letter-spacing=".5">home-screen &#183; draft</text>
+      <rect x="588" y="6" width="42" height="12" rx="6" fill="#f5b46a"/><rect x="598" y="10.5" width="22" height="3" rx="1.5" fill="#2a1a0c"/>
+      <!-- layers -->
+      <rect x="0" y="24" width="112" height="336" fill="#0e1418"/>
+      <text x="12" y="40" font-size="7" fill="#5d6c76" letter-spacing="1">LAYERS</text>
+      <rect class="sg-layer" x="4" y="47" width="104" height="16" rx="3" fill="#f5b46a" fill-opacity=".16"/>
+      <g font-size="8" fill="#9aa8b0">
+        <rect x="12" y="51" width="8" height="8" rx="1.5" fill="none" stroke="#5d6c76"/><text x="26" y="58">Home</text>
+        <rect x="18" y="71" width="8" height="8" rx="1.5" fill="#5d6c76"/><text x="32" y="78">Title</text>
+        <rect x="18" y="91" width="8" height="8" rx="1.5" fill="#5d6c76"/><text x="32" y="98">Hero image</text>
+        <rect x="18" y="111" width="8" height="8" rx="1.5" fill="#5d6c76"/><text x="32" y="118">Button</text>
+        <rect x="18" y="131" width="8" height="8" rx="1.5" fill="#5d6c76"/><text x="32" y="138">Body text</text>
+        <rect x="12" y="151" width="8" height="8" rx="4" fill="none" stroke="#5d6c76"/><text x="26" y="158">Prototype</text>
+      </g>
+      <!-- properties -->
+      <rect x="528" y="24" width="112" height="336" fill="#0e1418"/>
+      <text x="540" y="40" font-size="7" fill="#5d6c76" letter-spacing="1">DESIGN</text>
+      <rect x="540" y="50" width="40" height="14" rx="3" fill="#162129"/><rect x="586" y="50" width="40" height="14" rx="3" fill="#162129"/>
+      <rect x="546" y="55" width="18" height="4" rx="2" fill="#4a5963"/><rect x="592" y="55" width="22" height="4" rx="2" fill="#4a5963"/>
+      <rect x="540" y="72" width="86" height="14" rx="3" fill="#162129"/><rect x="546" y="77" width="44" height="4" rx="2" fill="#4a5963"/>
+      <text x="540" y="118" font-size="7" fill="#5d6c76" letter-spacing="1">FILL</text>
+      <circle cx="548" cy="138" r="7" fill="#f5b46a"/><circle cx="569" cy="138" r="7" fill="#efe4d2"/><circle cx="590" cy="138" r="7" fill="#5fb6ff"/><circle cx="611" cy="138" r="7" fill="#e0614f"/>
+      <circle class="sg-ring" cx="569" cy="138" r="10.5" fill="none" stroke="#fff" stroke-width="1.4"/>
+      <text x="540" y="172" font-size="7" fill="#5d6c76" letter-spacing="1">TYPE</text>
+      <rect x="540" y="180" width="86" height="14" rx="3" fill="#162129"/><rect x="546" y="185" width="52" height="4" rx="2" fill="#4a5963"/>
+      <rect x="540" y="200" width="40" height="14" rx="3" fill="#162129"/><rect x="586" y="200" width="40" height="14" rx="3" fill="#162129"/>
+      <g class="sg-all">
+        <!-- a sticky note of the idea, like the ones on his wall -->
+        <g class="sg-note"><rect x="134" y="62" width="84" height="72" rx="2" fill="#f5c35a"/><rect x="134" y="62" width="84" height="9" fill="#e3ad45"/>
+          <text x="141" y="86" font-size="9" fill="#5a3b10" font-style="italic">user flow</text>
+          <rect x="141" y="94" width="58" height="3" rx="1.5" fill="#8a6420"/><rect x="141" y="102" width="46" height="3" rx="1.5" fill="#8a6420"/><rect x="141" y="110" width="52" height="3" rx="1.5" fill="#8a6420"/></g>
+        <!-- the phone screen he is designing -->
+        <rect class="sg-outline" x="250" y="48" width="140" height="290" rx="16" fill="#0e1419" stroke="#f5b46a" stroke-width="1.5" pathLength="1"/>
+        <rect class="sg-hd" x="264" y="66" width="112" height="9" rx="4.5" fill="#efe4d2"/>
+        <rect class="sg-hd2" x="264" y="81" width="64" height="6" rx="3" fill="#56656f"/>
+        <g class="sg-img"><rect x="264" y="96" width="112" height="82" rx="10" fill="url(#sgSky)"/><circle cx="350" cy="120" r="9" fill="#fff3e0" fill-opacity=".85"/>
+          <path d="M264 168 L290 140 L308 158 L322 146 L350 170 L376 152 L376 168 Q376 178 366 178 L274 178 Q264 178 264 168Z" fill="#3a1d10" fill-opacity=".55"/></g>
+        <rect class="sg-ln" x="264" y="190" width="108" height="5" rx="2.5" fill="#3d4c56"/>
+        <rect class="sg-ln b" x="264" y="200" width="92" height="5" rx="2.5" fill="#3d4c56"/>
+        <rect class="sg-ln c" x="264" y="210" width="66" height="5" rx="2.5" fill="#3d4c56"/>
+        <g class="sg-chip"><rect x="264.5" y="224.5" width="48" height="14" rx="7" fill="none" stroke="#f5b46a" stroke-opacity=".7"/><rect x="274" y="230" width="29" height="3" rx="1.5" fill="#f5b46a" fill-opacity=".7"/>
+          <rect x="318.5" y="224.5" width="40" height="14" rx="7" fill="none" stroke="#56656f"/><rect x="327" y="230" width="23" height="3" rx="1.5" fill="#56656f"/></g>
+        <g class="sg-btn"><rect x="264" y="300" width="112" height="24" rx="12" fill="#f5b46a"/><rect x="298" y="309.5" width="44" height="5" rx="2.5" fill="#2a1a0c"/>
+          <g class="sg-selbox"><rect x="260.5" y="296.5" width="119" height="31" fill="none" stroke="#5fb6ff" stroke-width="1"/>
+            <g fill="#fff" stroke="#5fb6ff" stroke-width="1"><rect x="258" y="294" width="5" height="5"/><rect x="377" y="294" width="5" height="5"/><rect x="258" y="325" width="5" height="5"/><rect x="377" y="325" width="5" height="5"/></g>
+            <rect x="290" y="280" width="60" height="12" rx="3" fill="#5fb6ff"/><text x="320" y="288.5" font-size="7.5" fill="#06121b" text-anchor="middle">112 &#215; 24</text></g></g>
+        <!-- the next screen, and the prototype link to it -->
+        <g class="sg-frame2"><rect x="430.5" y="120.5" width="78" height="150" rx="10" fill="#0e1419" stroke="#3a4852"/>
+          <rect x="440" y="134" width="50" height="6" rx="3" fill="#56656f"/><rect x="440" y="226" width="58" height="4" rx="2" fill="#2e3b44"/><rect x="440" y="235" width="44" height="4" rx="2" fill="#2e3b44"/>
+          <g class="sg-play"><circle cx="469" cy="190" r="13" fill="#f5b46a"/><path d="M465 183.5 L475.5 190 L465 196.5Z" fill="#2a1a0c"/></g></g>
+        <path class="sg-link" d="M376 312 C412 312 396 196 428 196" fill="none" stroke="#5fb6ff" stroke-width="1.5" pathLength="1"/>
+        <path class="sg-arrow" d="M422 192 L430 196 L422 200Z" fill="#5fb6ff"/>
+      </g>
+      <!-- his cursor -->
+      <g class="sg-cur"><path d="M0 0 L0 15 L4.2 11 L7.3 18 L10 16.8 L7 10 L12 10Z" fill="#fff" stroke="#0a0f13" stroke-width="1"/>
+        <rect x="11" y="16" width="62" height="14" rx="3" fill="#f5b46a"/><text x="15" y="26" font-size="8.5" fill="#2a1a0c">Balayokesh</text></g>
+    </svg></div>
+    <div class="gframe" aria-hidden="true">
     <img src="assets/glass-stand.webp" alt="">
     <div class="gf-page" id="gfPage">
       <div class="gf-name">Balayokesh S S</div>
@@ -863,13 +1004,13 @@
       <div class="mon-head"><div><div class="eyebrow">Projects</div><h2>Selected work</h2></div><span class="count">03 projects</span></div>
       <ul class="mon-work">
         <li><button type="button" data-case="severna">
-          <div class="pic"><img src="assets/work-severna.webp" alt="Severna: Blood &amp; Betrayal, a dark-fantasy strategy game" decoding="async"><span class="go" aria-hidden="true">+</span></div>
+          <div class="pic"><img src="assets/work-severna.webp" alt="Severna: Blood &amp; Betrayal, a dark-fantasy strategy game" decoding="async"><span class="go" aria-hidden="true"><i>View</i><svg viewBox="0 0 24 24"><path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15"/></svg></span></div>
           <div class="cap"><div class="mon-tags"><span>Game UI</span><span>UI &amp; UX</span></div><b>Severna: Blood &amp; Betrayal</b><p>In-game widgets, a tactical HUD and interactive screens for a PC strategy game.</p></div></button></li>
         <li><button type="button" data-case="nytwolf">
-          <div class="pic"><img src="assets/work-nytwolf-logo.webp" alt="Nytwolf Games logo" decoding="async"><span class="go" aria-hidden="true">+</span></div>
+          <div class="pic"><img src="assets/work-nytwolf-logo.webp" alt="Nytwolf Games logo" decoding="async"><span class="go" aria-hidden="true"><i>View</i><svg viewBox="0 0 24 24"><path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15"/></svg></span></div>
           <div class="cap"><div class="mon-tags"><span>Web design</span><span>UI &amp; UX</span></div><b>Nytwolf Games</b><p>Website for an independent game studio, with a responsive layout and game showcases.</p></div></button></li>
         <li><button type="button" data-case="cotons">
-          <div class="pic"><img src="assets/work-cotons-logo.webp" alt="Cotons AI logo" decoding="async"><span class="go" aria-hidden="true">+</span></div>
+          <div class="pic"><img src="assets/work-cotons-logo.webp" alt="Cotons AI logo" decoding="async"><span class="go" aria-hidden="true"><i>View</i><svg viewBox="0 0 24 24"><path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15"/></svg></span></div>
           <div class="cap"><div class="mon-tags"><span>B2B SaaS</span><span>Health tech</span></div><b>Cotons AI</b><p>Lead management and sales pipeline for medical device sales teams.</p></div></button></li>
       </ul>
     </section>
@@ -925,7 +1066,7 @@
     <ul class="links">
         <li><a href="mailto:balayokesh1708@gmail.com"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span><small>Email</small><b>balayokesh1708@gmail.com</b></span><i aria-hidden="true">&rarr;</i></a></li>
         <li><a href="tel:+919345504629"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h3l1.4 4-2 1.4a12 12 0 0 0 5.7 5.7l1.4-2 4 1.4v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 5.5 5.7 2 2 0 0 1 7.5 3.5z"/></svg><span><small>Phone</small><b>+91 93455 04629</b></span><i aria-hidden="true">&rarr;</i></a></li>
-        <li><a href="https://www.linkedin.com/in/balayokesh-s-s-583b04235/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 10.5V17M8 7.6v.1M12 17v-3.6a2.1 2.1 0 0 1 4.2 0V17"/></svg><span><small>LinkedIn</small><b>balayokesh-s-s</b></span><i aria-hidden="true">&#8599;</i></a></li>
+        <li><a href="https://www.linkedin.com/in/balayokesh-s-s-583b04235/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 10.5V17M8 7.6v.1M12 17v-3.6a2.1 2.1 0 0 1 4.2 0V17"/></svg><span><small>LinkedIn</small><b>Balayokesh S S</b></span><i aria-hidden="true">&#8599;</i></a></li>
         <li><a href="assets/Balayokesh_Resume.pdf" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M12 11v6m0 0-2.2-2.2M12 17l2.2-2.2"/></svg><span><small>Resume</small><b>Open the PDF</b></span><i aria-hidden="true">&#8599;</i></a></li>
     </ul>
   </div>
@@ -1153,7 +1294,7 @@ const skillsUI = document.getElementById('skills'), skillsHead = document.getEle
 const jotEls = [...document.querySelectorAll('#jots .jot')];
 const frameHit = document.getElementById('frameHit'), resumeCta = document.getElementById('resumeCta');
 const skillsState = { headIn: 0, ctaIn: 0 };
-const monUi = document.getElementById('monUi'), monBoot = document.getElementById('monBoot');
+const monUi = document.getElementById('monUi'), monBoot = document.getElementById('monBoot'), saver = document.getElementById('saver');
 const monBox = { w: 300, h: 200, s: 1, vw: 0, vh: 0 };
 const monPush = { v: 0 };   // 0 -> 1 on the switch to Experience: the camera eases 3% closer   // the window's size at the camera's resting place on the monitor
 
@@ -1234,8 +1375,8 @@ function placeAbout() {
   let drop;
   if (bottomAnchored) {
     // ...but stays clear of the "scroll" hint underneath
-    const top0 = vh - (0.09 * vh + 56) - about.offsetHeight;
-    const hintTop = vh - (0.09 * vh + 22) - hint.offsetHeight;
+    const top0 = about.offsetTop;                     // its resting top, before the lift
+    const hintTop = hint.getBoundingClientRect().top;
     drop = Math.max(0, Math.min(hidden, hintTop - 14 - (top0 + cardBottom)));
   } else {
     drop = vh * 0.88 - (vh / 2 - about.offsetHeight / 2 + cardBottom);
@@ -1420,7 +1561,10 @@ function render() {
   const fb = reduced ? 0 : Math.max(rack * 1.4, bump(1.6, 0.2, k) * 2.6 * Math.min(s, 2), bump(0.5, 0.42, pv) * Math.min(14, vw / 110),
     bump(0.5, 0.5, zn) * 1.4, bump(0.86, 0.13, zn) * 2.6, bump(0.5, 0.42, zr) * Math.min(7, vw / 220), bump(0.86, 0.13, zr) * 2.6,
     bump(0.5, 0.42, zm) * Math.min(6, vw / 240), bump(0.86, 0.13, zm) * 2.2);
-  stage.style.filter = fb > 0.05 ? `blur(${fb.toFixed(2)}px)` : 'none';
+  // phones skip the focus pulls on the desk moves: blurring the whole screen over the zoomed-in desk
+  // shot was too much for a phone's graphics chip and parts of the picture flickered out
+  const phoneDesk = k > 5 && (vw < 760 || vw / vh < 1);
+  stage.style.filter = fb > 0.05 && !phoneDesk ? `blur(${fb.toFixed(2)}px)` : 'none';
   const wp = Math.min(1, Math.max(0, k - 2));
   walk.style.opacity = walkReady ? smooth(2, 2.025, k).toFixed(3) : '0';
   // the still of the walk's end dissolves in underneath: hidden behind the video when the video draws,
@@ -1482,7 +1626,9 @@ function render() {
         deskRoll = 0; deskCam.mv = 0;
       }
       // a layer kept for transforms is drawn once at its first size; let it redraw sharp when zoomed in
-      deskL.style.willChange = k > 5.001 ? 'auto' : '';
+      // ...on phones only once the camera is at rest: redrawing the zoomed picture sharp on every frame of a
+      // move was too heavy for phones and made it flicker. While moving it stays one ready-made layer
+      deskL.style.willChange = k > 5.001 && (!phoneDesk || deskCam.mv < 0.01) ? 'auto' : '';
       deskL.style.transform = deskRoll
         ? `translate3d(${vw / 2}px, ${vh / 2}px, 0) rotate(${deskRoll.toFixed(5)}rad) translate3d(${(XS - vw / 2).toFixed(2)}px, ${(YS - vh / 2).toFixed(2)}px, 0) scale(${SS.toFixed(5)})`
         : `translate3d(${XS.toFixed(2)}px, ${YS.toFixed(2)}px, 0) scale(${SS.toFixed(5)})`;
@@ -1492,6 +1638,11 @@ function render() {
       const mugX = XS + 0.8134 * ww * SS;
       if (mugX > -0.1 * vw && mugX < 1.1 * vw) drawSteam(k);
       deskL.style.visibility = 'visible';
+      // the design tool on the screen runs through skills, notes and resume, and switches off just
+      // before the monitor wakes for the projects (so the screen's own boot flicker still reads)
+      const sv = 1 - smooth(7.3, 7.6, k);
+      saver.style.opacity = sv.toFixed(3);
+      saver.classList.toggle('paused', sv <= 0);
       // the soft seam is only for the move: it narrows away as the camera settles, so the edge of the
       // wide shot (the bookshelf) never shows through the left of the resting desk shot
       const fe = 14 * (1 - smooth(0.6, 1, pv));
@@ -1503,6 +1654,7 @@ function render() {
       deskL.style.visibility = 'hidden';
       skillsUI.style.visibility = 'hidden';
       deskCam.on = false;
+      saver.classList.add('paused');
     }
     wideL.style.transform =
       `translate3d(${vw / 2}px, ${vh / 2}px, 0) rotate(${r2}rad) translate3d(${(X - vw / 2).toFixed(2)}px, ${(Y - vh / 2).toFixed(2)}px, 0) scale(${S2.toFixed(5)})`;
@@ -1527,6 +1679,7 @@ function render() {
     deskL.style.visibility = 'hidden';
     skillsUI.style.visibility = 'hidden';
     deskCam.on = false;
+    saver.classList.add('paused');
   }
   room.style.visibility = (u > 0.03 && pullReady && pullCovers) || u > 0.5 ? 'hidden' : 'visible';
 
@@ -1948,6 +2101,14 @@ const sound = (() => {
     // turned on later while the title is showing: play the name again, this time with its sound
     if (on && typeof replayTitle === 'function') replayTitle();
   });
+  // the tab is minimised or switched away: the music stops, and picks up again on return
+  // (only if sound was on; the button keeps its setting)
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden) ctx.suspend();
+    else if (on) ctx.resume();
+  });
+  addEventListener('pagehide', () => { if (ctx) ctx.suspend(); });
 
   return {
     zap, shimmer, title, whoosh, door, glow,
