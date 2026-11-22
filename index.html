@@ -825,12 +825,44 @@
     .chapter { left: 16px; }
     .chapter i { display: none; }
   }
+  /* the smart speaker's caption: what was said, and its ring lighting up when it heard */
+  .alexa { position: fixed; left: 50%; bottom: calc(9vh + 104px); z-index: 6; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+    padding: 10px 18px 10px 12px; border-radius: 999px; background: rgba(8,6,5,.62); box-shadow: inset 0 0 0 1px rgba(239,228,210,.12);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); pointer-events: none;
+    opacity: 0; transform: translate(-50%, 8px); transition: opacity .45s, transform .45s; }
+  .alexa.on { opacity: 1; transform: translate(-50%, 0); }
+  .alexa p { font-family: var(--f-ui); font-size: 14px; line-height: 1.35; letter-spacing: .01em; color: #f3e8d6; white-space: nowrap; }
+  .alexa .ring { flex: none; position: relative; width: 22px; height: 22px; border-radius: 50%; background: #15110e; box-shadow: inset 0 0 0 2px rgba(239,228,210,.18); }
+  .alexa .ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; opacity: 0; transition: opacity .3s;
+    background: conic-gradient(from 0deg, #1fd1ff, #2a6bff, #1fd1ff 55%, #0a2a6b 75%, #1fd1ff);
+    -webkit-mask: radial-gradient(circle, transparent 54%, #000 58%); mask: radial-gradient(circle, transparent 54%, #000 58%);
+    box-shadow: 0 0 12px rgba(40,170,255,.7); }
+  .alexa.heard .ring::after { opacity: 1; animation: alexaSpin 1.1s linear infinite; }
+  /* the speaker's answer: in its own light blue */
+  .alexa.reply p { color: #a9e4ff; }
+  @keyframes alexaSpin { to { transform: rotate(1turn); } }
+  /* the speaker on the desk (speaker.webp, a see-through cut-out, square), placed in desk.webp pixels:
+     its body ~90 px wide, sitting on the desk top left of the pencil cup. Its ring glows while the music plays */
+  .speaker { position: absolute; z-index: 1; left: 9.35%; top: 48.66%; width: 6.23%; height: 11.07%; pointer-events: none; }
+  .speaker img { filter: brightness(.9) saturate(.95); }
+  .speaker i { position: absolute; display: block; pointer-events: none; }
+  .speaker .spk-shadow { left: 10%; right: 6%; top: 85%; height: 10%; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(0,0,0,.6), rgba(0,0,0,0)); }
+  .speaker .spk-glow { left: 40%; width: 52%; top: 52%; height: 22%; border-radius: 50%; opacity: 0; transition: opacity 1.2s;
+    background: radial-gradient(closest-side, rgba(70,190,255,.75), rgba(40,140,255,.25) 55%, rgba(40,140,255,0)); mix-blend-mode: screen; }
+  .desk.playing .speaker .spk-glow { opacity: 1; animation: ringBreathe 3.2s ease-in-out infinite; }
+  @keyframes ringBreathe { 50% { opacity: .5; } }
+  @media (prefers-reduced-motion: reduce) { .alexa.heard .ring::after, .desk.playing .speaker .spk-glow { animation: none; } }
+
   /* phones: the scroll hint drops to the very bottom edge, clear of every section's words, and the
      chapter label moves up to the top left, level with the sound button */
   @media (max-width: 760px), (max-aspect-ratio: 1/1) {
     .hint { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); gap: 6px; font-size: 10px; letter-spacing: .3em; }
     .hint i { height: 16px; }
     .chapter { top: calc(4.5vh - 12px); bottom: auto; height: 24px; }
+    /* up top under the sound button, clear of the About card at the bottom */
+    .alexa { top: calc(4.5vh + 26px); bottom: auto; transform: translate(-50%, -8px); }
+    .alexa p { font-size: 13px; white-space: normal; }
   }
 </style>
 </head>
@@ -862,6 +894,8 @@
   </div>
   <div class="wide" id="wide"><img src="assets/about-wide.webp" alt="Balayokesh smiling at the reflection in the tall wooden mirror"><video class="pull" id="pull" muted playsinline preload="auto"></video></div>
   <div class="desk" id="desk"><div class="lamp-glow" id="lampGlow"></div><canvas class="steam" id="steam" width="240" height="310"></canvas><div class="mon-spill" id="monSpill"></div><div class="mon-light" id="monLight"></div><img src="assets/desk.webp" alt="Balayokesh's desk: monitor, desk lamp, pencil cup, books, four sticky notes on the wall, his resume in a copper glass frame and a cup of coffee">
+    <!-- the smart speaker, left of the pencil cup: its blue ring glows while the music plays -->
+    <div class="speaker" aria-hidden="true"><i class="spk-shadow"></i><img src="assets/speaker.webp" alt=""><i class="spk-glow"></i></div>
     <div class="saver" id="saver" aria-hidden="true"><svg viewBox="0 0 640 360" preserveAspectRatio="none">
       <defs>
         <pattern id="sgDots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#22313b"/></pattern>
@@ -1135,6 +1169,8 @@
 
 <div class="chapter" id="chapter"><b id="chapNum">01</b><i></i><span id="chapName">Darkness</span></div>
 <div class="hint" id="hint"><span id="hintText">Scroll</span><i></i></div>
+<!-- what is said to the smart speaker, as a caption, and its light ring answering -->
+<div class="alexa" id="alexa" aria-live="polite"><span class="ring" aria-hidden="true"></span><p id="alexaText"></p></div>
 <nav class="dots" id="dots" aria-label="Scenes"></nav>
 <button class="sound" id="sound" aria-pressed="false" aria-label="Sound"><span class="eq"><i></i><i></i><i></i></span><span id="soundLabel">Sound off</span></button>
 
@@ -1154,8 +1190,7 @@
         <div class="note" id="gateNote">The door is open. Step in and look around.</div>
         <div class="handle" aria-hidden="true"><div class="lever" id="doorLever"></div><div class="rose"></div></div>
         <div class="gate-btns">
-          <button class="primary" id="enterSound"><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Enter with sound</button>
-          <button class="quiet" id="enterQuiet"><svg class="mute" viewBox="0 0 14 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 4.2h2.4L6.6 1.5v9L3.4 7.8H1z" fill="currentColor" stroke="none"/><path d="M9 4l4 4M13 4l-4 4"/></svg><span>Enter without sound</span></button>
+          <button class="primary" id="enterSound"><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Enter</button>
         </div>
         <div class="door-shade" id="doorShade" aria-hidden="true"></div>
       </div>
@@ -1253,11 +1288,13 @@ const chapter = $('chapter'), chapNum = $('chapNum'), chapName = $('chapName');
 const bars = [$('barTop'), $('barBottom')];
 const grade = $('grade'), exposure = $('exposure');
 const charL = $('char');
+// the smart speaker: the lamps it switches on, what the sound hears of them, and the music it starts
+const roomPower = { v: 0 };
+let roomHeard = 0, musicOn = false;
 const stage = document.querySelector('.stage');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const SCENES = [
-  { id: 's3', name: 'Name',        hint: 'Scroll to enter the room' },
   { id: 's4', name: 'The room',    hint: 'Scroll to look in the mirror' },
   { id: 's5', name: 'About',       hint: 'Scroll to know more' },
   { id: 's7', name: 'Skills',      hint: 'Scroll to read my notes' },
@@ -1504,13 +1541,14 @@ function render() {
   if (typeof scrubTick === 'function') scrubTick();
   rwRender();
   const k = cam.k;
-  const i = Math.min(frames.length - 2, Math.floor(k)), t0 = Math.min(1, k - i);
+  const sign = k < 2;   // SKIP_SIGN: the wide shot glides straight to the lit room, past the sign close-up
+  const i = sign ? 0 : Math.min(frames.length - 2, Math.floor(k)), t0 = sign ? k / 2 : Math.min(1, k - i);
   // during the walk video the lean-in on the face only starts once he is at the mirror
   const t = i === 2 ? smooth(0.55, 1, t0) : t0;
-  const a = frames[i], b = frames[i + 1];
+  const a = frames[i], b = frames[sign ? 2 : i + 1];
 
   // a slight camera roll while moving: leans in on the push, out on the pull-back
-  const roll = reduced ? 0 : Math.sin(Math.PI * t) * [0.55, -0.45, 0, -0.18][i] * Math.PI / 180;
+  const roll = reduced || sign ? 0 : Math.sin(Math.PI * t) * [0.55, -0.45, 0, -0.18][i] * Math.PI / 180;
   // mouse parallax: the camera leans gently toward the cursor (1.5% overscan gives it room)
   par.x += (parT.x - par.x) * 0.045; par.y += (parT.y - par.y) * 0.045;
   const s = Math.exp(lerp(Math.log(a.s), Math.log(b.s), t)) * (1 + drift.z) * (1 + 1.6 * Math.abs(roll) * aspect) * 1.015;
@@ -1523,9 +1561,14 @@ function render() {
   lastS = s; lastTx = tx; lastTy = ty;
 
   // image swaps follow the camera position (same framing forward and backward)
-  const close = k <= 1 ? smooth(0.12, 0.42, k) : 1 - smooth(1.3, 1.62, k);
-  let lit = smooth(1.44, 1.78, k);   // quick swap: the two photos never sit half-on-half for long
-  const rack = Math.max(bump(0.27, 0.17, k), bump(1.46, 0.17, k));
+  const close = 0;   // the sign close-up photo is no longer shown (SKIP_SIGN)
+  // the room lamps: switched on by voice right after the door (roomPower), and on the way back
+  // out of the sign close-up by scroll. The close-up photo is drawn under the lit room, so the
+  // voice-switched lamps step aside while the camera is in close on the sign.
+  const scrollLit = smooth(1.44, 1.78, k);   // quick swap: the two photos never sit half-on-half for long
+  const lit = Math.max(scrollLit, roomPower.v * (1 - close));
+  roomHeard = Math.max(scrollLit, roomPower.v);   // what the sound hears: the lamps click on once
+  const rack = 0;   // the focus pulls belonged to the sign close-up
   closeL.style.opacity = close.toFixed(3);
   litL.style.opacity = lit.toFixed(3);
   // the character stands nearer the camera than the wall: he slides a little against it
@@ -1546,7 +1589,7 @@ function render() {
   // grade: teal shadows while the neon rules, easing off as the warm room lights come on
   grade.style.opacity = (0.6 - 0.42 * lit).toFixed(3);
   // eyes adjusting: a brief warm overexposure as the lamps catch
-  exposure.style.opacity = (reduced ? 0 : bump(1.6, 0.24, k) * 0.5).toFixed(3);
+  exposure.style.opacity = (reduced ? 0 : bump(1.6, 0.24, k) * 0.5 * (1 - roomPower.v)).toFixed(3);
 
   // 04 -> 05: the video takes over from the still the instant the camera leaves Scene 04
   // (its first frame is the same picture), and scroll scrubs it frame by frame
@@ -1558,7 +1601,7 @@ function render() {
   // 07 -> 08 -> 09: in to the notes, then a quick slide across the desk to the frame
   const zn = Math.min(1, Math.max(0, k - 5)), zr = Math.min(1, Math.max(0, k - 6)), zm = Math.min(1, Math.max(0, k - 7));
   // ...and at the end of each move the focus is pulled: soft for a moment, then sharp on what we came to see
-  const fb = reduced ? 0 : Math.max(rack * 1.4, bump(1.6, 0.2, k) * 2.6 * Math.min(s, 2), bump(0.5, 0.42, pv) * Math.min(14, vw / 110),
+  const fb = reduced ? 0 : Math.max(rack * 1.4, bump(0.5, 0.42, pv) * Math.min(14, vw / 110),
     bump(0.5, 0.5, zn) * 1.4, bump(0.86, 0.13, zn) * 2.6, bump(0.5, 0.42, zr) * Math.min(7, vw / 220), bump(0.86, 0.13, zr) * 2.6,
     bump(0.5, 0.42, zm) * Math.min(6, vw / 240), bump(0.86, 0.13, zm) * 2.2);
   // phones skip the focus pulls on the desk moves: blurring the whole screen over the zoomed-in desk
@@ -1566,7 +1609,9 @@ function render() {
   const phoneDesk = k > 5 && (vw < 760 || vw / vh < 1);
   stage.style.filter = fb > 0.05 && !phoneDesk ? `blur(${fb.toFixed(2)}px)` : 'none';
   const wp = Math.min(1, Math.max(0, k - 2));
-  walk.style.opacity = walkReady ? smooth(2, 2.025, k).toFixed(3) : '0';
+  // as he comes to rest at the mirror the video dissolves into the still (the still has the sign
+  // reflected the right way round, like a real mirror)
+  walk.style.opacity = walkReady ? (smooth(2, 2.025, k) * (1 - smooth(0.9, 0.99, wp))).toFixed(3) : '0';
   // the still of the walk's end dissolves in underneath: hidden behind the video when the video draws,
   // and the face close-up still arrives when it doesn't
   walkEnd.style.opacity = smooth(0.55, 0.97, wp).toFixed(3);
@@ -1690,7 +1735,11 @@ function render() {
   const speed = Math.abs(k - lastK) / dt;
   lastT = now; lastK = k;
   const neon = +getComputedStyle(signL).opacity;
-  sound.update(neon, speed, lit, tl.time() > 0.3);
+  // the music waits for "Alexa, play some music" at the mirror
+  // the speaker sits on the desk: near it in the Skills scenes, behind you at the mirror
+  const nearDesk = smooth(4.3, 4.9, k) * (1 - smooth(6.15, 6.75, k));
+  const behindYou = smooth(2.3, 2.9, k) * (1 - smooth(4.15, 4.75, k));
+  sound.update(neon, speed, roomHeard, musicOn, nearDesk, behindYou);
 
   drawDust(k, lit, neon);
 }
@@ -1795,7 +1844,14 @@ const sound = (() => {
     // pulsing bass and a soft kick (with sidechain pump) once the room lights come on
     const musicG = gain(0), comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -20; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.25;
-    musicG.connect(comp).connect(master);
+    // where the speaker is: the music comes from the speaker on the desk, so it is louder at the desk,
+    // and at the mirror (speaker behind you) it sounds muffled, further off and from behind
+    const placeLP = filt('lowpass', 18000, 0.5), placeG = gain(1), placeRev = gain(0);
+    const pan = ctx.createPanner();
+    pan.panningModel = 'HRTF'; pan.distanceModel = 'inverse'; pan.refDistance = 1; pan.rolloffFactor = 0;
+    if (pan.positionZ) pan.positionZ.value = -1; else pan.setPosition(0, 0, -1);
+    musicG.connect(comp).connect(placeLP).connect(pan).connect(placeG).connect(master);
+    placeLP.connect(placeRev).connect(rev);
     const padLP = filt('lowpass', 700, 0.6), pump = gain(1), padG = gain(0);
     padLP.connect(pump).connect(padG); padG.connect(musicG); padG.connect(rev);
     const lfo = ctx.createOscillator(), lfoG = gain(220);
@@ -1809,7 +1865,7 @@ const sound = (() => {
     const bassLP = filt('lowpass', 420, 4), bassG = gain(0);
     bassLP.connect(bassG).connect(musicG);
     const kickG = gain(0); kickG.connect(musicG);
-    nodes = { musicG, padLP, pump, padG, arpLP, arpG, bassLP, bassG, kickG };
+    nodes = { musicG, padLP, pump, padG, arpLP, arpG, bassLP, bassG, kickG, placeLP, placeG, placeRev, pan };
 
     // neon transformer hum, kept soft and low
     const humG = gain(0), humLP = filt('lowpass', 380);
@@ -2113,10 +2169,28 @@ const sound = (() => {
   return {
     zap, shimmer, title, whoosh, door, glow,
     lamp: level => { if (on && ctx) click(level); },   // a soft tap: a note pressed onto the wall
+    isOn: () => on,
+    // the speaker's "got it": two soft rising notes
+    chime() {
+      if (!on || !ctx) return;
+      [[784, 0], [1175, 0.12]].forEach(([f, d]) => {
+        const t = ctx.currentTime + d, o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+        o.connect(g); g.connect(nodes.master); g.connect(nodes.rev); o.start(t); o.stop(t + 0.6);
+      });
+    },
     enable: () => set(true),   // from the entry gate (a click, so the browser allows audio)
-    update(neon, speed, lit, music) {
+    update(neon, speed, lit, music, near = 0, behind = 0) {
       if (!on) { prevNeon = neon; prevLit = lit; return; }
       const t = ctx.currentTime, now = performance.now();
+      // the speaker's place: a little louder at the desk; behind you, quieter, muffled and roomier
+      nodes.placeG.gain.setTargetAtTime((1 + 0.4 * near) * (1 - 0.35 * behind), t, 0.4);
+      nodes.placeLP.frequency.setTargetAtTime(18000 * Math.pow(1300 / 18000, behind), t, 0.4);
+      nodes.placeRev.gain.setTargetAtTime(0.45 * behind, t, 0.4);
+      const ang = Math.PI * behind, px = -Math.sin(ang) * 0.8, pz = -Math.cos(ang) * 1.2;
+      if (nodes.pan.positionZ) { nodes.pan.positionX.setTargetAtTime(px, t, 0.4); nodes.pan.positionZ.setTargetAtTime(pz, t, 0.4); }
+      else nodes.pan.setPosition(px, 0, pz);
       nodes.humG.gain.setTargetAtTime(0.008 * neon * (1 - 0.6 * lit), t, 0.006);   // barely there: warmth, not a buzz
       // no music under the title card: the track starts on the first bar once the visitor scrolls
       if (music && !playing) { playing = true; step = 0; nextT = t + 0.08; }
@@ -2238,18 +2312,119 @@ if (reduced) {
 }
 let neonOn = false;
 tl.call(() => {
-  if (forwardMove && !neonOn) { neonOn = true; flick.restart(); }
-  else if (!forwardMove && neonOn) { neonOn = false; flick.pause(); gsap.to(lights, { opacity: 0, duration: 0.35, ease: 'power2.in' }); }
+  // straight after the door the lights wait for the voice; any other time they come on as the scene passes
+  if (forwardMove && !neonOn) { neonOn = true; if (!alexaPending) switchOn(); }
+  else if (!forwardMove && neonOn) {
+    neonOn = false; flick.pause();
+    gsap.to(lights, { opacity: 0, duration: 0.35, ease: 'power2.in' });
+    gsap.to(roomPower, { v: 0, duration: 0.35, ease: 'power2.in', overwrite: true });
+  }
 }, null, '-=0.2');
+
+// ---------- the smart speaker: "Alexa, switch on the lights" / "Alexa, play some music" ----------
+// The voice is the browser's own; the words also show as a caption, so it reads with the sound off.
+// First the neon on the wall glows up, then the room lamps follow.
+let alexaPending = false, musicAsked = false;
+const alexaEl = $('alexa'), alexaText = $('alexaText');
+function switchOn() {
+  flick.restart();
+  gsap.to(roomPower, { v: 1, duration: reduced ? 0.3 : 0.9, delay: reduced ? 0.4 : 1.1, ease: 'power2.inOut', overwrite: true });
+}
+const synth = window.speechSynthesis;
+const FEMALE = /female|zira|aria|jenny|samantha|ava|allison|susan|hazel|heera|veena|neerja|karen|moira|tessa|serena|libby|sonia|emma|michelle|google us english|google uk english female/i;
+function pickVoice(female) {
+  const vs = synth ? synth.getVoices().filter(v => /^en/i.test(v.lang)) : [];
+  const pref = female
+    // the speaker: a calm American woman's voice, like a home speaker
+    ? [/aria|jenny|zira|samantha|ava|allison|michelle|google us english/i, FEMALE]
+    // the visitor: a man's voice, Indian English if there is one
+    : [/ravi|prabhat|hemant/i, /male|daniel|david|guy|mark|george|ryan|james|alex|fred/i, /en-IN/i, /en-GB|en-US/i];
+  for (const re of pref) {
+    const v = vs.find(v => (re.test(v.name) || re.test(v.lang)) && (female || !FEMALE.test(v.name) || /\bmale\b/i.test(v.name)));
+    if (v) return v;
+  }
+  return vs[0] || null;
+}
+function speak(text, female, end) {
+  if (!(synth && sound.isOn() && !document.hidden)) return false;
+  try {
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text), v = pickVoice(female);
+    if (v) u.voice = v;
+    u.lang = v ? v.lang : 'en-US';
+    // if the device has only one voice, the pitch still tells the two apart
+    u.rate = female ? 1.1 : 1.08; u.pitch = female ? 1.12 : 0.9;
+    u.onend = u.onerror = () => setTimeout(end, 200);
+    synth.speak(u);
+    return true;
+  } catch (e) { return false; }
+}
+if (synth) { synth.getVoices(); synth.addEventListener && synth.addEventListener('voiceschanged', () => synth.getVoices()); }
+let captionTimer = null;
+function say(text, done) {
+  clearTimeout(captionTimer);
+  alexaText.textContent = `“${text}”`;
+  alexaEl.classList.remove('heard', 'reply'); alexaEl.classList.add('on');
+  let finished = false;
+  const end = () => {
+    if (finished) return; finished = true;
+    // the speaker heard it: its ring lights up with a chime
+    alexaEl.classList.add('heard'); sound.chime();
+    done();
+  };
+  // never wait long on a voice that does not report back: about as long as the words take
+  if (speak(text, false, end)) setTimeout(end, 700 + 380 * text.split(' ').length);
+  else setTimeout(end, 1300);   // no voice: the caption alone
+}
+// the speaker answers in its own (woman's) voice, then the caption leaves
+function reply(text, done) {
+  clearTimeout(captionTimer);
+  alexaText.textContent = text;
+  alexaEl.classList.add('on', 'heard', 'reply');
+  let finished = false;
+  const end = () => {
+    if (finished) return; finished = true;
+    captionTimer = setTimeout(() => alexaEl.classList.remove('on', 'heard', 'reply'), 700);
+    done();
+  };
+  if (speak(text, true, end)) setTimeout(end, 600 + 340 * text.split(' ').length);
+  else setTimeout(end, 1100);
+}
+// straight after the door: dark room, the request, the lights; then the camera moves in to the name
+function alexaLights(then) {
+  alexaPending = true;
+  gsap.delayedCall(reduced ? 0.3 : 0.8, () => say('Alexa, switch on the lights.', () => {
+    gsap.delayedCall(0.25, () => {
+      // the lights come on while she is still answering, as a real speaker does
+      gsap.delayedCall(reduced ? 0.2 : 0.4, () => { alexaPending = false; neonOn = true; switchOn(); });
+      reply('Okay, turning on the lights.', () => gsap.delayedCall(reduced ? 0.4 : 1.2, then));
+    });
+  }));
+}
+function alexaMusic() {
+  if (!forwardMove || musicAsked) return;
+  musicAsked = true;
+  lockTalk(true);   // no scrolling while they talk; free again once the caption has gone
+  say('Alexa, play my favourite music.', () => gsap.delayedCall(0.25, () => reply('Sure. Playing your favourite music.', () => {
+    gsap.delayedCall(0.2, () => { musicOn = true; $('desk').classList.add('playing'); });
+    gsap.delayedCall(0.7, () => lockTalk(false));
+  })));
+}
+// TALK_LOCK: while Alexa and the visitor talk, scroll, swipe, keys and the scene dots wait.
+// A safety timer frees it in case a voice never reports back.
+let talkLock = false, talkLockTimer = null;
+function lockTalk(on) {
+  talkLock = on;
+  clearTimeout(talkLockTimer);
+  if (on) talkLockTimer = setTimeout(() => { talkLock = false; }, 20000);
+}
 tl.to({}, { duration: 0.6 });                     // a beat while the neon catches
 tl.addLabel('s2');
 
-// 02 -> 03: slow dolly in
-tl.to(cam, { k: 1, duration: 2.8, ease: 'power1.inOut' }, 's2');
-tl.addLabel('s3');
-
-// 03 -> 04: pull back, lamps buzz on, letterbox opens
-tl.to(cam, { k: 2, duration: 3.4, ease: 'power1.inOut' }, 's3');
+// 02 -> 04: the lights are on: the camera settles gently on the lit room and the letterbox opens.
+// No close-up on the sign any more: for k below 2 the render goes straight from the wide shot
+// to the lit-room shot (see SKIP_SIGN).
+tl.to(cam, { k: 2, duration: 3.4, ease: 'power1.inOut' }, 's2');
 tl.addLabel('s4');
 
 // 04 -> 05: one continuous take (video): he walks to the mirror and meets his own eyes.
@@ -2257,14 +2432,11 @@ tl.addLabel('s4');
 tl.to(cam, { k: 3, duration: 4.2, ease: 'none' }, 's4');
 // light glints off the glass, and the intro appears
 tl.to('#aboutShade', { opacity: 1, duration: 1.4, ease: 'power1.inOut' }, 's4+=3.2');
-if (!reduced) {
-  // hidden until its moment: parked at the start it would sit on the glass as a stray line in scenes 1-4
-  tl.fromTo('.glass', { visibility: 'hidden' }, { visibility: 'visible', duration: 0, immediateRender: false }, 's4+=3.35');
-tl.fromTo('.glass', { visibility: 'visible' }, { visibility: 'hidden', duration: 0, immediateRender: false }, 's4+=5.3');
-  tl.fromTo('#sheen', { xPercent: -100 }, { xPercent: 420, duration: 1.8, ease: 'power2.inOut' }, 's4+=3.4')
-    .to('#sheen', { opacity: 1, duration: 0.3, ease: 'none' }, 's4+=3.4');
-}
+// (the light streak across the mirror glass is gone: its cut-out no longer fitted the close-up, and its
+// straight edge showed as a ghost line over the face)
 tl.call(() => { if (forwardMove) sound.shimmer(); }, null, 's4+=3.5');
+// at the mirror, as the About words come up: the music starts only now
+tl.call(alexaMusic, null, 's4+=3.9');
 tl.fromTo(['#about .eyebrow', '#about h2', '#about .role'], { opacity: 0, y: 16, filter: 'blur(6px)' },
   { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, stagger: 0.14, ease: 'power3.out' }, 's4+=3.6');
 tl.addLabel('s5');
@@ -2449,6 +2621,7 @@ gate.querySelectorAll('button').forEach(b => {
 function enter(withSound) {
   if (!gateOpen) return;
   gateOpen = false;
+  lockTalk(true);   // no scrolling while the door opens and the lights talk plays
   if (withSound) sound.enable();
   gate.querySelectorAll('button').forEach(b => b.disabled = true);
   // while the light fills the screen, the room is set up behind it (no dark gap); as the light clears,
@@ -2456,10 +2629,18 @@ function enter(withSound) {
   const finish = (delay) => {
     gsap.delayedCall(delay, () => {
       forwardMove = true;
+      // the room is dark: the neon and the lamps wait for the voice, then the camera settles on the lit room
+      alexaPending = true;
+      if (snapTween) { snapTween.kill(); snapTween = null; }
+      clearTimeout(idleTimer);
       scroll.pos = scroll.target = tl.labels.s2;
       tl.time(tl.labels.s2);
-      snapTween = gsap.to(scroll, { target: LABELS[0], duration: reduced ? 0.01 : 2.6, delay: reduced ? 0 : 0.6, ease: 'power2.inOut',
-        onComplete: () => { snapTween = null; } });
+      // no scrolling until the talk is over and the camera has settled on the lit room
+      lockTalk(true);
+      alexaLights(() => {
+        snapTween = gsap.to(scroll, { target: LABELS[0], duration: reduced ? 0.01 : 2.1, ease: 'power2.inOut',
+          onComplete: () => { snapTween = null; current = 0; updateUI(0); lockTalk(false); } });
+      });
     });
     gsap.to(gate, { opacity: 0, duration: reduced ? 0.4 : 1.4, delay: delay + 0.05, ease: 'power1.inOut', onComplete: () => gate.remove() });
   };
@@ -2485,7 +2666,6 @@ function enter(withSound) {
   finish(3.25);
 }
 $('enterSound').addEventListener('click', () => enter(true));
-$('enterQuiet').addEventListener('click', () => enter(false));
 // the hall comes up out of the dark
 gsap.to('#gateDim', { opacity: 0, duration: reduced ? 0.4 : 2, delay: 0.25, ease: 'power1.inOut' });
 $('enterSound').focus({ preventScroll: true });
@@ -2660,15 +2840,15 @@ $('caseBack').addEventListener('click', () => closeCase());
 // between two scenes, it settles on the nearest one in the direction you were going.
 // resting points: one per scene
 const STOPS = [
-  { id: 's3', scene: 0 }, { id: 's4', scene: 1 },
-  { id: 's5', scene: 2 },
-  { id: 's6', scene: 2, hint: 'Scroll to see my skills' },
-  { id: 's7', scene: 3 },
-  { id: 's8', scene: 3, hint: 'Scroll to see my resume' },
-  { id: 's9', scene: 4 },
-  { id: 's10', scene: 5 },
-  { id: 's11', scene: 6 },
-  { id: 's12', scene: 7 },
+  { id: 's4', scene: 0 },
+  { id: 's5', scene: 1 },
+  { id: 's6', scene: 1, hint: 'Scroll to see my skills' },
+  { id: 's7', scene: 2 },
+  { id: 's8', scene: 2, hint: 'Scroll to see my resume' },
+  { id: 's9', scene: 3 },
+  { id: 's10', scene: 4 },
+  { id: 's11', scene: 5 },
+  { id: 's12', scene: 6 },
 ];
 const LABELS = STOPS.map(st => tl.labels[st.id]);
 const END = LABELS[LABELS.length - 1];
@@ -2715,6 +2895,7 @@ function glideTo(t) {
 }
 
 function goTo(i) {
+  if (talkLock) return;
   i = Math.max(0, Math.min(STOPS.length - 1, i));
   if (intro.isActive()) intro.progress(1);
   lastDir = LABELS[i] >= scroll.target ? 1 : -1;
@@ -2734,7 +2915,7 @@ function snap() {
 }
 
 function nudge(dt) {
-  if (!dt) return;
+  if (!dt || talkLock) return;
   if (intro.isActive()) intro.progress(1);
   if (snapTween) { snapTween.kill(); snapTween = null; }
   lastDir = Math.sign(dt);
@@ -2771,6 +2952,7 @@ addEventListener('touchstart', e => {
 addEventListener('touchmove', e => {
   if (touchY == null || gateOpen || resumeOpen || caseOpen) return;
   e.preventDefault();
+  if (talkLock) { touchSum = 0; return; }
   const y = e.touches[0].clientY, now = performance.now();
   const d = touchY - y;
   touchV = 0.8 * (d / Math.max(1, now - touchT)) + 0.2 * touchV;   // px per ms
@@ -2782,7 +2964,7 @@ addEventListener('touchmove', e => {
 addEventListener('touchend', () => {
   if (touchY == null) return;
   touchY = null;
-  if (!touchSum || gateOpen || resumeOpen || caseOpen) return;   // a tap, not a swipe
+  if (!touchSum || gateOpen || resumeOpen || caseOpen || talkLock) return;   // a tap, not a swipe
   const dir = Math.sign(Math.abs(touchV) > 0.3 ? touchV : touchSum);
   lastDir = dir;
   if (Math.abs(touchSum) > 30 || Math.abs(touchV) > 0.3) glideTo(dir > 0 ? touchRange[1] : touchRange[0]);
