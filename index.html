@@ -86,8 +86,10 @@
     background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.55) 100%);
   }
   .grain {
-    position: fixed; inset: -50%; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
-    background-size: 160px 160px;
+    /* one grain tile, nudged to a new spot every frame of grain: moving a ready layer is free, while swapping its
+       picture repainted a layer four times the screen 12 times a second and made phones flicker */
+    position: fixed; inset: -160px; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+    background-size: 160px 160px; will-change: transform;
   }
   .bar { position: fixed; left: 0; right: 0; height: 9vh; background: #000; pointer-events: none; z-index: 2; }
   .bar.top { top: 0; transform-origin: 50% 0; } .bar.bottom { bottom: 0; transform-origin: 50% 100%; }
@@ -255,12 +257,15 @@
   .haze {
     position: absolute; left: 55.74%; top: 33.2%; width: 69.5%; height: 67.5%;
     transform: translate(-50%, -50%); opacity: .55;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='420'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005 0.011' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.62 0 0 0 0 0.32 1.3 0 0 0 -0.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
-    background-size: 150% 150%; background-position: 0% 50%;
+    overflow: hidden;
     -webkit-mask-image: radial-gradient(ellipse closest-side, #000 15%, transparent 100%);
     mask-image: radial-gradient(ellipse closest-side, #000 15%, transparent 100%);
   }
-  .haze.two { opacity: .35; background-size: 210% 190%; background-position: 100% 0%; }
+  /* the noise slides by transform (a moving ready-made layer), not by background-position, which redrew the
+     noise every frame and made phones flicker */
+  .haze i { position: absolute; left: 0; top: 0; width: 150%; height: 150%; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='420'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005 0.011' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.62 0 0 0 0 0.32 1.3 0 0 0 -0.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"); background-size: 100% 100%; will-change: transform; }
+  .haze.two { opacity: .35; }
+  .haze.two i { width: 210%; height: 190%; }
 
   /* colour grade: cool shadows against the warm neon */
   .grade { position: fixed; inset: 0; pointer-events: none; background: #0b3a48; mix-blend-mode: soft-light; opacity: .6; }
@@ -477,9 +482,11 @@
     transition: box-shadow .35s; }
   .frame-hit.on { pointer-events: auto; }
   .frame-hit.on:hover, .frame-hit.on:focus-visible { outline: none; box-shadow: 0 0 0 1px rgba(245,180,106,.75), 0 0 28px rgba(245,180,106,.4); }
-  .frame-hit.pulse { animation: framePulse 2.6s ease-in-out infinite; }
-  @keyframes framePulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(245,180,106,.18), 0 0 14px rgba(245,180,106,.08); }
-    50% { box-shadow: 0 0 0 1px rgba(245,180,106,.6), 0 0 30px rgba(245,180,106,.3); } }
+  /* the pulse fades a ready-drawn glow (cheap), rather than redrawing a changing shadow every frame */
+  .frame-hit::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+    box-shadow: 0 0 0 1px rgba(245,180,106,.6), 0 0 30px rgba(245,180,106,.3); will-change: opacity; }
+  .frame-hit.pulse::after { animation: framePulse 2.6s ease-in-out infinite; }
+  @keyframes framePulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
   .resume-cta { position: absolute; left: 0; top: 0; width: min(340px, 32vw); visibility: inherit; text-shadow: 0 1px 10px rgba(0,0,0,.85); }
   .resume-cta::before { content: ""; position: absolute; inset: -40px -50px; z-index: -1; pointer-events: none;
     background: radial-gradient(closest-side, rgba(12,7,3,.6), rgba(12,7,3,.35) 60%, transparent); }
@@ -881,6 +888,26 @@
     .alexa { top: calc(4.5vh + 26px); bottom: auto; transform: translate(-50%, -8px); }
     .alexa p { font-size: 13px; white-space: normal; }
   }
+
+  /* short wide screens (a phone turned sideways): the About text and the contact list were taller than the screen,
+     so they are made compact here and the contact rows sit two by two */
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    .about { right: 130px; width: min(440px, calc(100vw - 430px)); }
+    .about .eyebrow { margin-bottom: 6px; }
+    .about h2 { font-size: 34px; margin-bottom: 4px; }
+    .about .role { font-size: 10px; margin-bottom: 10px; }
+    .about .rule { display: none; }
+    .about p { font-size: 12px; line-height: 1.45; margin-bottom: 10px; }
+    .about ul { gap: 5px; }
+    .about li { font-size: 8.5px; letter-spacing: .08em; padding: 5px 8px; }
+    .contact-card { right: 130px; width: min(470px, calc(100vw - 400px)); }
+    .contact .eyebrow { margin-bottom: 6px; }
+    .contact h2 { font-size: 32px; }
+    .contact-card > p { font-size: 12px; line-height: 1.45; margin-top: 8px; }
+    .links { grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+    .links a { padding: 8px 10px; gap: 9px; }
+    .links b { font-size: 11.5px; }
+  }
 </style>
 </head>
 <body>
@@ -896,8 +923,8 @@
     <img src="assets/char-cut.webp" alt="Balayokesh standing in the room" class="char" id="char">
     <div class="fx-outer" id="fxOuter">
       <div class="fx" id="fx">
-        <div class="haze" id="haze1"></div>
-        <div class="haze two" id="haze2"></div>
+        <div class="haze" id="haze1"><i></i></div>
+        <div class="haze two" id="haze2"><i></i></div>
         <div class="bloom"></div>
         <div class="flare wide"></div>
         <div class="flare"></div>
@@ -1513,7 +1540,8 @@ function placeDesk(X, Y, W, H, zn) {
     resumeCta.style.transform = 'translateY(-50%)';
   } else {
     resumeCta.style.left = '16px'; resumeCta.style.width = '';
-    resumeCta.style.top = (ft + fh + 22).toFixed(1) + 'px';
+    // under the frame, but never past the bottom bar on a short screen (a phone turned sideways)
+    resumeCta.style.top = Math.min(ft + fh + 22, vh * 0.91 - 40 - resumeCta.offsetHeight).toFixed(1) + 'px';
     resumeCta.style.transform = 'none';
   }
 }
@@ -1625,8 +1653,9 @@ function render() {
     bump(0.5, 0.42, zm) * Math.min(6, vw / 240), bump(0.86, 0.13, zm) * 2.2);
   // phones skip the focus pulls on the desk moves: blurring the whole screen over the zoomed-in desk
   // shot was too much for a phone's graphics chip and parts of the picture flickered out
-  const phoneDesk = k > 5 && (vw < 760 || vw / vh < 1);
-  stage.style.filter = fb > 0.05 && !phoneDesk ? `blur(${fb.toFixed(2)}px)` : 'none';
+  const phone = vw < 760 || vw / vh < 1, phoneDesk = k > 5 && phone;
+  // ...and the same holds for the focus pulls before the desk, so phones never blur the whole screen
+  stage.style.filter = fb > 0.05 && !phone ? `blur(${fb.toFixed(2)}px)` : 'none';
   const wp = Math.min(1, Math.max(0, k - 2));
   // as he comes to rest at the mirror the video dissolves into the still (the still has the sign
   // reflected the right way round, like a real mirror)
@@ -2541,21 +2570,20 @@ if (!reduced) {
   gsap.to(glow, { opacity: 0.94, duration: 2.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to('.flare', { scaleX: 1.08, duration: 2.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   // haze slowly rolls through the light
-  gsap.to('#haze1', { backgroundPosition: '100% 30%', duration: 26, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  gsap.to('#haze2', { backgroundPosition: '0% 100%', duration: 34, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.fromTo('#haze1 i', { xPercent: 0, yPercent: -16.67 }, { xPercent: -33.33, yPercent: -10, duration: 26, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.fromTo('#haze2 i', { xPercent: -52.38, yPercent: 0 }, { xPercent: 0, yPercent: -47.37, duration: 34, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to(drift, { x: 6, duration: 7, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to(drift, { y: -4, duration: 5.3, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   gsap.to(drift, { z: 0.012, duration: 9, yoyo: true, repeat: -1, ease: 'sine.inOut' });
 
   const g = document.createElement('canvas'); g.width = g.height = 160;
-  const gc = g.getContext('2d'), grain = $('grain'), frames = [];
-  for (let f = 0; f < 6; f++) {
+  const gc = g.getContext('2d'), grain = $('grain');
+  {
     const d = gc.createImageData(160, 160);
     for (let p = 0; p < d.data.length; p += 4) { const v = Math.random() * 255; d.data[p] = d.data[p + 1] = d.data[p + 2] = v; d.data[p + 3] = 255; }
-    gc.putImageData(d, 0, 0); frames.push(`url(${g.toDataURL()})`);
+    gc.putImageData(d, 0, 0); grain.style.backgroundImage = `url(${g.toDataURL()})`;
   }
-  let gf = 0;
-  setInterval(() => { grain.style.backgroundImage = frames[gf = (gf + 1) % frames.length]; }, 80);
+  setInterval(() => { grain.style.transform = `translate3d(${Math.random() * 160 | 0}px, ${Math.random() * 160 | 0}px, 0)`; }, 80);
 }
 
 // ---------- opening title (plays once on load) ----------
